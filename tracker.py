@@ -1,22 +1,23 @@
 import bencode as B
-import requests as R
 import hashlib as H
+import requests
+#import util
 
 class Tracker:
-    def __init__(self):
-        self.torrent = 'flagfromserverorig.torrent' #if torrent == None else torrent
-
-    def decode(self):
-        f = open(self.torrent, 'r')
-        metadata = f.read()
-        metadata = B.bdecode(metadata)
-        self.metadata = metadata
-        return metadata
+    def __init__(self, metadata):
+        self.torrent = metadata.torrent
+        self.tracker_url = metadata.data['announce']
+        self.params = {
+            'uploaded': '0',
+            'compact': '1',
+            'info_hash': H.sha1(B.bencode(metadata.data['info'])).digest(),
+            'event': 'started',
+            'downloaded': '0',
+            'peer_id': '-TZ-0000-00000000000',
+            'port': '6881', 
+            'left': str(metadata.data['info']['length']),
+        }
 
     def send_request(self):
-        if not hasattr(self, metadata):
-            self.decode()
-        tracker_url = self.metadata['announce']
-        info_hash = H.sha1(B.encode(self.metadata['info']))
-
-
+        print self.params
+        return requests.get(url=self.tracker_url, params=self.params)
