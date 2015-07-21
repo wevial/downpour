@@ -4,14 +4,14 @@ import sys
 import struct
 
 class Client:
-    def __init__(self, tracker, metadata):
-        self.tracker = tracker
+    def __init__(self, metadata, tracker):
         self.metadata = metadata
+        self.tracker = tracker
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def connect_to_peer(self, peer):
         self.socket.connect(peer)
-        print 'we are connected'
+        print 'You have connected!'
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -41,3 +41,12 @@ class Client:
         finally:
             print peer_handshake
             return peer_handshake
+
+    def parse_handshake(self, handshake):
+        # lenpstr - pstr - reserved - info hash - peer id
+        (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
+        assert peer_hash == self.tracker.params['info_hash']
+        return True
+
+        
+

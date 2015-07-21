@@ -4,8 +4,6 @@ import requests
 import urllib as U
 import socket
 import metadata
-#import util
-#url_encode the info_hash
 
 class Tracker:
     def __init__(self, metadata):
@@ -26,7 +24,8 @@ class Tracker:
 
     def construct_url(self):
         """ Construct the full URL for the torrent we're connecting to """ 
-        params = '&'.join('%s=%s' % (key, U.quote(self.params[key])) for key in self.params_order)
+        params = '&'.join('%s=%s' % (key, U.quote(self.params[key])) 
+                for key in self.params_order)
         full_url = self.tracker_url + '?' +  params
         self.full_url = full_url
         return full_url
@@ -58,13 +57,3 @@ class Tracker:
         response_text = B.bdecode(response.text)
         self.peer_ips = self.peers_to_ips(response_text['peers'])
         
-    #TO DO - make sure str methods are compatible with unicode crap
-
-
-        
-def build():
-    m = metadata.Metadata()
-    m.decode()
-    t = Tracker(m)
-    t.construct_url()
-    return t
