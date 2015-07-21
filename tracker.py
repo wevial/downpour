@@ -4,6 +4,7 @@ import requests
 import urllib as U
 import socket
 import metadata
+import peer
 
 class Tracker:
     def __init__(self, metadata):
@@ -40,7 +41,6 @@ class Tracker:
     def get_port(self, peer_byte_list):
         return 256 * peer_byte_list[4] + peer_byte_list[5]
 
-
     def peer_host_port_vals(self, peers):
         #Get values of all bytes in byte_string list of peers
         peer_host_port_values = []
@@ -53,7 +53,12 @@ class Tracker:
         byte_list = self.peer_host_port_vals(peer_bytes)
         return [(self.get_host_string(peer), self.get_port(peer)) for peer in byte_list]
 
+    def peers_to_objects(self, peer_tuples):
+        self.peers = []
+        for ip, port in peer_tuples:
+            self.peers.append(peer.Peer(ip, port))
+
     def parse_response(self, response):
         response_text = B.bdecode(response.text)
-        self.peer_ips = self.peers_to_ips(response_text['peers'])
-        
+        peer_ips = self.peers_to_ips(response_text['peers'])
+        self.peers_to_objects(peer_ips)

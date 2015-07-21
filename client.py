@@ -1,17 +1,13 @@
 import tracker
 import socket
-import sys
 import struct
+import peer
 
 class Client:
-    def __init__(self, metadata, tracker):
-        self.metadata = metadata
+    def __init__(self, metainfo, tracker):
+        self.metainfo = metainfo
         self.tracker = tracker
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def connect_to_peer(self, peer):
-        self.socket.connect(peer)
-        print 'You have connected!'
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -24,18 +20,18 @@ class Client:
                 peer_id
                 )
         assert len(handshake) == 49 + len(pstr)
-        return handshake
+        self.handshake = handshake
     
     def send_handshake(self, peer):
-        self.connect_to_peer(peer)
-        handshake = self.build_handshake()
+        peer.connect()
+        print 'You have connected!'
         try:
-            self.socket.sendall(handshake)
+            peer.sendall(self.handshake)
             peer_handshake = ''
             amount_received = 0
             amount_expected = 68 # handshake string length
             while amount_received < amount_expected:
-                data = self.socket.recv(68)
+                data = peer.recv(68)
                 peer_handshake += data
                 amount_recieved += len(data)
         finally:
@@ -49,4 +45,6 @@ class Client:
         return True
 
         
+    def receive_msg(self):
+        pass
 

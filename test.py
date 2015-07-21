@@ -1,24 +1,25 @@
 import client as C
-import metadata as M
+import metainfo as M
 import tracker as T
 
 # Set things up...
-print 'Setting up metadata, tracker...'
-m = M.Metadata()
+print 'Setting up metainfo, tracker...'
+m = M.Metainfo()
 m.decode()
 #print m.data
 
 t = T.Tracker(m)
 t.construct_url()
 t.parse_response(t.send_request())
-print 'Metadata, tracker set up.'
-peers = t.peer_ips
+print 'metainfo, tracker set up.'
+peers = t.peers
 peer = ('96.126.104.219', 63529)
 print 'List of peers:\n\t', peers
 print "Hardcoded 'peer' to Tom's ip/port =", peer
 
 print 'Setting up client...'
 c = C.Client(m, t)
+c.build_handshake()
 
 print 'Sending handshake...'
 handshake = c.send_handshake(peer)
