@@ -8,7 +8,7 @@ class Client:
         self.metainfo = metainfo
         self.tracker = tracker
         self.peer_id = tracker.params['peer_id']
-        self.info_hash = tracker.params['infohash']
+        self.info_hash = tracker.params['info_hash']
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'

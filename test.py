@@ -23,8 +23,8 @@ c = C.Client(m, t)
 c.build_handshake()
 
 print 'Sending handshake...'
-handshake = c.send_handshake(tom)
+handshake = c.send_and_receive_handshake(tom)
 print 'Handshake sent.'
 #handshake = c.send_handshake(peers[0]) # Frank's
-handshake = c.parse_handshake(handshake)
+handshake = c.verify_handshake(handshake)
 
