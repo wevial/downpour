@@ -31,7 +31,7 @@ class Tracker:
         self.full_url = full_url
         return full_url
 
-    def send_request(self):
+    def send_request_to_tracker(self):
         """ Returns bencoded request """
         return requests.get(url=self.full_url)
 
@@ -53,7 +53,7 @@ class Tracker:
         byte_list = self.peer_host_port_vals(peer_bytes)
         return [(self.get_host_string(peer), self.get_port(peer)) for peer in byte_list]
 
-    def peers_to_objects(self, peer_tuples):
+    def construct_peers(self, peer_tuples):
         self.peers = []
         for ip, port in peer_tuples:
             self.peers.append(peer.Peer(ip, port))
@@ -61,4 +61,4 @@ class Tracker:
     def parse_response(self, response):
         response_text = B.bdecode(response.text)
         peer_ips = self.peers_to_ips(response_text['peers'])
-        self.peers_to_objects(peer_ips)
+        self.construct_peers(peer_ips)
