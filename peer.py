@@ -17,5 +17,5 @@ class Peer:
     def recv(self, num_bytes):
         return self.socket.recv(num_bytes)
 
-    def have_piece(self):
+    def has_piece(self):
         pass

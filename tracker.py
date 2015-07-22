@@ -3,24 +3,24 @@ import hashlib as H
 import requests
 import urllib as U
 import socket
-import metadata
+import metainfo
 import peer
 
 class Tracker:
-    def __init__(self, metadata):
-        self.torrent = metadata.torrent
-        self.tracker_url = metadata.data['announce']
+    def __init__(self, metainfo):
+        self.torrent = metainfo.torrent
+        self.tracker_url = metainfo.data['announce']
         self.params_order = ['uploaded', 'compact', 'info_hash', 'event', 
                 'downloaded', 'peer_id', 'port', 'left']
         self.params = {
             'uploaded': '0',
             'compact': '1',
-            'info_hash': H.sha1(B.bencode(metadata.data['info'])).digest(),
+            'info_hash': H.sha1(B.bencode(metainfo.data['info'])).digest(),
             'event': 'started',
             'downloaded': '0',
             'peer_id': '-TZ-0000-00000000000',
             'port': '6881', 
-            'left': str(metadata.data['info']['length']),
+            'left': str(metainfo.data['info']['length']),
         }
 
     def construct_url(self):

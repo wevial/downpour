@@ -8,4 +8,4 @@ class Metainfo:
         f = open(self.torrent, 'r')
         metainfo = f.read()
         metainfo = B.bdecode(metainfo)
-        self.data = metainfo # Un-Bencoded dictionary
+        self.data = metainfo # Un-bencoded dictionary
