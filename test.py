@@ -1,30 +1,21 @@
 import client as C
-import metainfo as M
-import tracker as T
 import peer as P
 
-# Set things up...
-print 'Setting up metainfo, tracker...'
-m = M.Metainfo()
-m.decode()
-#print m.data
 
-t = T.Tracker(m)
-t.construct_url()
-t.parse_response(t.send_request())
-print 'metainfo, tracker set up.'
-peers = t.peers
-tom = P.Peer('96.126.104.219', 63529)
+# Set things up...
+print 'Setting up client and tracker...'
+c = C.Client(C.TEST_TORRENT)
+c.setup_client_and_tracker()
+
+print 'Client, tracker set up.'
+peers = c.peers
+tom = P.Peer('96.126.104.219', 54465)
 print 'List of peers (', len(peers), '):\n\t', peers
 print "Hardcoded 'peer' to Tom's ip/port =", tom
 
-print 'Setting up client...'
-c = C.Client(m, t)
-c.build_handshake()
-
 print 'Sending handshake...'
 handshake = c.send_and_receive_handshake(tom)
-print 'Handshake sent.'
-#handshake = c.send_handshake(peers[0]) # Frank's
+#handshake = c.send_and_receive_handshake(peers[0]) # Frank's
 handshake = c.verify_handshake(handshake)
+print 'Handshake verified'
 

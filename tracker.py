@@ -1,8 +1,6 @@
 import bencode as B
 import requests
 import urllib as U
-import socket
-import metainfo
 from peer import Peer
 
 class Tracker:
@@ -18,20 +16,23 @@ class Tracker:
             'downloaded': '0',
             'peer_id': client.client_id,
             'port': '6881', 
-            'left': client.left,
+            'left': str(client.left),
         }
-        self.full_url = self.construct_url(client.tracker_url)
+#        self.url = self.construct_url(client.announce_url)
 
-    def construct_url(self, tracker_url):
+    def construct_tracker_url(self):
         """ Construct the full URL for the torrent we're connecting to """ 
+        print self.params
         params = '&'.join('%s=%s' % (key, U.quote(self.params[key])) 
                 for key in self.params_order)
-        full_url = self.tracker_url + '?' +  params
-        return full_url
+        tracker_url = self.client.announce_url + '?' +  params
+        self.url = tracker_url
+        return tracker_url
 
-    def send_request_to_tracker(self):
+    def send_request_to_tracker_server(self):
         """ Returns bencoded request """
-        return requests.get(url=self.full_url)
+        print "Handshake sent"
+        return requests.get(url=self.url)
 
     def peer_host_port_vals(self, peers):
         #Get values of all bytes in byte_string list of peers
@@ -51,7 +52,7 @@ class Tracker:
         byte_list = self.peer_host_port_vals(peer_bytes)
         return [(self.get_host_string(peer), self.get_port(peer)) for peer in byte_list]
 
-    def construct_peers(self, peer_tuples):
+    def construct_peers_for_client(self, peer_tuples):
         peers = [Peer(ip, port) for ip, port in peer_tuples]
         for i, peer in enumerate(peers):
             self.client.add_peer(i, peer)
@@ -59,4 +60,10 @@ class Tracker:
     def parse_response(self, response):
         response_text = B.bdecode(response.text)
         peer_ips = self.peers_to_ip_tuples(response_text['peers'])
-        self.construct_peers(peer_ips)
+        self.construct_peers_for_client(peer_ips)
+        print 'Response parsed'
+        
+    def send_request_and_parse_response(self):
+        response = self.send_request_to_tracker_server()
+        self.parse_response(response)
+

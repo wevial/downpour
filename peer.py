@@ -10,6 +10,9 @@ class Peer:
         self.am_interested = False
         self.peer_is_interested = False
         self.buf = '' # Data buffer
+        
+    def __repr__(self):
+        return str((self.ip, self.port))
 
     def connect(self):
         self.socket.connect((self.ip, self.port))
