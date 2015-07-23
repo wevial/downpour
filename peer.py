@@ -1,8 +1,9 @@
 import time
 import socket
+from bitstring import BitArray
 
 class Peer:
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, num_pieces):
         self.ip = ip
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -12,7 +13,8 @@ class Peer:
         self.peer_is_interested = False
         self.buf = '' # Data buffer
         self.time_of_last_msg = time.time()
-        self.keep_alive = False
+        self.is_alive = False
+        self.bitfield = BitArray(length=num_pieces)
         
     def __repr__(self):
         return str((self.ip, self.port))
@@ -26,14 +28,17 @@ class Peer:
     def recv(self, num_bytes):
         return self.socket.recv(num_bytes)
 
+    def update_time_of_last_msg(self):
+        self.time_of_last_msg = time.time()
+
     def continue_living(self):
         self.time_of_last_msg = time.time()
-        self.keep_alive = True
+        self.is_alive = True
         
     def check_is_still_alive(self):
         time_elapsed = time.time() - self.time_of_last_msg
-        self.keep_alive = time_elapsed > 120 # Timeout set at 2 mins
-        return self.keep_alive
+        self.is_alive = time_elapsed < 120 # Timeout timer set at 2 mins
+        return self.is_alive
 
     def has_piece(self):
         pass
