@@ -2,6 +2,7 @@ import tracker
 import struct
 import peer
 import message
+from bitstring import BitArray
 
 class Client:
     def __init__(self, metainfo, tracker):
@@ -9,6 +10,7 @@ class Client:
         self.tracker = tracker
         self.peer_id = tracker.params['peer_id']
         self.info_hash = tracker.params['info_hash']
+        self.pieces = BitArray(len(metainfo.piece_hashes))
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -35,7 +37,10 @@ class Client:
         return peer_hash == self.info_hash
         
     def receive_peer_msg(self, peer):
-        peer_msg = message.receive_data(peer, amount_expected=5, block_size=5)
+#        peer_msg = message.receive_data(peer, amount_expected=5, block_size=5)
+        length_prefix
+        msg_id
+        payload
 
 def peer_has_piece():
     pass

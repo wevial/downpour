@@ -1,4 +1,3 @@
-import peer
 import select
 MSG_LENGTH = 1024
 # Event loop using select
@@ -10,9 +9,9 @@ MSG_LENGTH = 1024
 class Reactor:
     # initialize with list of all peers
     def __init__(self, peer_list):
-        self.sockets = [peer.socket
-                for peer in peer_list]
+        self.sockets = [peer.socket for peer in peer_list]
         self.socket_ids = dict([(s, i) for i, s in enumerate(sockets)])
+
     def get_data(self):
         while self.sockets:
             rlist, _, _ = select.select(self.sockets, [], [])

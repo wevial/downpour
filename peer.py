@@ -5,8 +5,11 @@ class Peer:
         self.ip = ip
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.choked = True
-        self.interested = False
+        self.am_choking_peer = True
+        self.peer_is_choking_client = True
+        self.am_interested = False
+        self.peer_is_interested = False
+        self.buf = '' # Data buffer
 
     def connect(self):
         self.socket.connect((self.ip, self.port))
