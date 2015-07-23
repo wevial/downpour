@@ -1,3 +1,4 @@
+import time
 import socket
 
 class Peer:
@@ -10,6 +11,8 @@ class Peer:
         self.am_interested = False
         self.peer_is_interested = False
         self.buf = '' # Data buffer
+        self.time_of_last_msg = time.time()
+        self.keep_alive = False
         
     def __repr__(self):
         return str((self.ip, self.port))
@@ -22,6 +25,15 @@ class Peer:
 
     def recv(self, num_bytes):
         return self.socket.recv(num_bytes)
+
+    def stay_alive(self):
+        self.time_of_last_msg = time.time()
+        self.keep_alive = True
+        
+    def check_is_still_alive(self):
+        time_elapsed = time.time() - self.time_of_last_msg
+        self.keep_alive = time_elapsed > 120
+        return self.keep_alive
 
     def has_piece(self):
         pass

@@ -66,23 +66,6 @@ class Client:
     def add_peer(self, id, peer):
         self.peers[id] = peer
         
-    def receive_peer_msg(self, peer):
-#        peer_msg = message.receive_data(peer, amount_expected=5, block_size=5)
-        length_prefix
-        msg_id
-        payload
-
-def peer_has_piece():
-    pass
-
-def choke_peer():
-    pass
-
-def unchoke_peer():
-    pass
-
-def request_piece_from_peer():
-    pass
-
-
+    def update_timeout(peer_id):
+        pass
 
