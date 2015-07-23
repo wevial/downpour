@@ -23,38 +23,43 @@ class MessageParser(object):
         while len(buf) > 0:
             # Handshake is processed in the client
             if len(buf) < 4:
+                if not self.peer.check_is_still_alive():
+                    break # Do something later to kill the peer
                 continue
-            msg_len, = struct.unpack('!I', buf[0:4])
+
+            msg_len = struct.unpack('!I', buf[0:4])[0]
+
             if msg_len == 0:
                 # Keep alive message => prevent peer from timing out
-                self.peer.stay_alive()
+                self.peer.continue_living()
             elif len(buf) < msg_len:
                 self.client.wait_for_rest_of_message(self.peer_id, buf)
                 continue
             else:
-                msg_id = struct.unpack('!B', buf[4])
+                msg_id = struct.unpack('!B', buf[4])[0]
                 if msg_len == 1:
                     self.client.set_flag(self.peer_id, MESSAGE_FLAGS[msg_id])
-                if msg_id == 4:
+                elif msg_id == 4:
                     self.client.update_pieces(self.peer_id, 
                             struct.unpack('!I', buf[5:9]))
-                if msg_id == 5:
+                elif msg_id == 5:
                     self.client.update_bit_array(self.peer_id,
                             # TODO: Talk through the data structure for the bit array
                             # Modify this code accordingly
                             buf[5:5 + msg_len - 1])
-                if msg_id == 6:
+                elif msg_id == 6:
                     block_info = struct.unpack('!III', buf[5:17])
                     self.client.add_to_queue(self.peer_id, block_info)
-                if msg_id == 7:
+                elif msg_id == 7:
                     piece_index, block_index = struct.unpack('!II', buf[5:13])
                     block = struct.unpack('!'+str(msg_len-9)+'B', buf[13:])
                     self.client.add_block_to_piece(self.peer_id,
                             (piece_index, begin, len(block)), block)
-                if msg_id == 8:
+                elif msg_id == 8:
                     block_info = struct.unpack('!III', buf[5:17])
                     self.client.remove_from_queue(self.peer_id, block_info)
             buf = buf[msg_len + 4:]
+
 # Old functions, likely to be deleted / edited extensively
 
 def receive_data(peer, amount_expected, block_size=4096):

@@ -26,13 +26,13 @@ class Peer:
     def recv(self, num_bytes):
         return self.socket.recv(num_bytes)
 
-    def stay_alive(self):
+    def continue_living(self):
         self.time_of_last_msg = time.time()
         self.keep_alive = True
         
     def check_is_still_alive(self):
         time_elapsed = time.time() - self.time_of_last_msg
-        self.keep_alive = time_elapsed > 120
+        self.keep_alive = time_elapsed > 120 # Timeout set at 2 mins
         return self.keep_alive
 
     def has_piece(self):
