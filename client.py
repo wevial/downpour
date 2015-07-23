@@ -30,7 +30,7 @@ class Client:
         # Currently only worrying about ONE FILE torrents
         # Would have to change these for multi-file
         self.file_name = data['name']
-        self.file_length = data['length']
+        self.left = data['length'],
     
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
