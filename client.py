@@ -13,7 +13,7 @@ TEST_TORRENT = 'flagfromserverorig.torrent'
 class Client:
     def __init__(self, torrent):
         self.torrent = torrent
-        self.client_id = '-TZ-0000-00000000000'
+        self.peer_id = '-TZ-0000-00000000000'
         self.peers = {}
 
     def decode_torrent(self):
@@ -37,7 +37,7 @@ class Client:
                 len(pstr),
                 pstr,
                 self.info_hash,
-                self.client_id
+                self.peer_id
                 )
         assert len(handshake) == 49 + len(pstr)
         self.handshake = handshake

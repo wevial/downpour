@@ -14,7 +14,7 @@ class Tracker:
             'info_hash': client.info_hash,
             'event': 'started',
             'downloaded': '0',
-            'peer_id': client.client_id,
+            'peer_id': client.peer_id,
             'port': '6881', 
             'left': str(client.left),
         }
