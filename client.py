@@ -63,8 +63,24 @@ class Client:
         (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
         return peer_hash == self.info_hash
 
-    def add_peer(self, id, peer):
-        self.peers[id] = peer
+    def add_peer(self, id_num, peer):
+        self.peers[id_num] = peer
+    
+    def set_flag(self, peer_id, flag):
+        peer = this.peers[peer_id]
+        if flag == 'choke':
+            peer.peer_is_choking_client == True
+        if flag == 'unchoke': 
+            peer.peer_is_choking_client == False
+            if peer.am_interested:
+                self.send_request(peer, self.select_request())
+        if flag == 'interested':
+            peer.peer_is_interested == True
+            # Assuming we always unchoke when receiving interested message
+            peer.am_choking_peer == False
+            self.send_message(peer, 'unchoke')
+        if flag == 'uninterested':
+            peer.peer_is_interested == False
         
     def update_timeout(peer_id):
         pass

@@ -40,5 +40,27 @@ class Peer:
         self.is_alive = time_elapsed < 120 # Timeout timer set at 2 mins
         return self.is_alive
 
+    def set_bitfield(self, bitfield_buf):
+        self.bitfield = BitArray(bytes=bitfield_buf) 
+
+    def update_bitfield(self, piece_index):
+        if not self.bitfield[ piece_index ]:
+            self.bitfield.invert(piece_index)
+
+    def set_flag(self, flag):
+        if flag == 'choke':
+            self.peer_is_choking_client = True
+        if flag == 'unchoke': 
+            self.peer_is_choking_client = False
+            if self.am_interested:
+                self.client.send_request(peer, self.select_request())
+        if flag == 'interested':
+            self.peer_is_interested = True
+            # Assuming we always unchoke when receiving interested message
+            self.am_choking_peer = False
+            self.send_message('unchoke')
+        if flag == 'uninterested':
+            peer.peer_is_interested = False
+
     def has_piece(self):
         pass
