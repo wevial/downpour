@@ -10,6 +10,9 @@ c.setup_client_and_tracker()
 print 'Client, tracker set up.'
 peers = c.peers
 tom = P.Peer('96.126.104.219', 54465)
+for peer in peers:
+    if peer.ip == '96.126.104.219':
+        tom = peer
 print 'List of peers (', len(peers), '):\n\t', peers
 print "Hardcoded 'peer' to Tom's ip/port =", tom
 
