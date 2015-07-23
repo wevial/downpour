@@ -4,8 +4,8 @@ class Metainfo:
     def __init__(self):
         self.torrent = 'flagfromserverorig.torrent'
 
-    def decode(self):
-        f = open(self.torrent, 'r')
+    def decode_torrent(self, torrent):
+        f = open(torrent, 'r')
         metainfo = f.read()
-        metainfo = B.bdecode(metainfo)
+        decoded_info = B.bdecode(f.read())
         self.data = metainfo # Un-bencoded dictionary
