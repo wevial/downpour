@@ -58,6 +58,7 @@ class Peer:
         return peer_handshake
 
     def process_and_act_on_incoming_data(self, data):
+        print 'whee, i got data!'
         (messages, buf_remainder) = M.Msg.get_messages_from_buffer(self.buf + data)
         self.act_on_messages(messages)
         self.update_buffer(buf_remainder)
@@ -80,6 +81,7 @@ class Peer:
         for message in messages:
             # Call message handler with arguments from message
             (message_action, message_params) = message_actions[message.msg_id]
+            print message.msg_name
             message_args = [getattr(message, param) for param in message_params] 
             message_action(*message_args)
 

@@ -27,6 +27,7 @@ class Reactor:
         rlist, _, _ = select.select(self.sockets, [], [])
         for socket in rlist:
             data = self.read_all(socket)
+            print data
             self.readers[socket](data)
         
     @staticmethod
@@ -43,6 +44,7 @@ class Reactor:
                 if not new_data:
                     break
                 data += new_data
+                print 'MOAR DATA', len(data)
         if not data:
             raise IOError('Reactor.read_all passed an empty socket') 
         return data
