@@ -42,6 +42,8 @@ class Reactor:
             else:
                 if not new_data:
                     break
+                print 'more data!'
+                print data
                 data += new_data
         if not data:
             raise IOError('Reactor.read_all passed an empty socket') 

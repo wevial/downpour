@@ -1,6 +1,6 @@
 import client as C
 import peer as P
-
+import reactor
 
 # Set things up...
 print 'Setting up client and tracker...'
@@ -24,6 +24,8 @@ handshake = tom.verify_handshake(t_handshake, c.info_hash)
 if handshake:
     print 'Handshake verified'
     tom.initiate_messages(t_handshake, c.info_hash)
+    c.reactor = Reactor([tom])
+    c.reactor.get_data()
 else:
     print 'Wrong info_hash'
 

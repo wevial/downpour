@@ -23,7 +23,15 @@ class Msg(object):
             # Handshake is handled separately
             if len(buf) < 4:
                 break
-            
+            try:
+                #grab first 68 bytes & check if it's a handshake
+                (pstrlen, pstr) = struct.unpack('!B10s')
+                print pstrlen
+                print pstr
+                if pstr == 'BitTorrent':
+                    raise IOError('WTF, another handshake?')
+            except IOError as e:
+                print e.message
             msg_len = struct.unpack('!I', buf[0:4])[0]
             print 'message length', msg_len
             if msg_len == 0:

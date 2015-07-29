@@ -81,6 +81,7 @@ class Peer:
         for msg in messages:
             # Call message handler with arguments from message
             (message_action, message_params) = message_actions[msg.msg_id]
+            print msg.msg_name
             message_args = [getattr(msg, param) for param in message_params] 
             message_action(*message_args)
 
