@@ -23,7 +23,7 @@ t_handshake = tom.send_and_receive_handshake(c.handshake)
 handshake = tom.verify_handshake(t_handshake, c.info_hash)
 if handshake:
     print 'Handshake verified'
-    tom.initiate_messages(t_handshake, c.info_hash)
+#    tom.initiate_messages(t_handshake, c.info_hash)
     # init reactor
     c.reactor = Reactor([tom])
     c.reactor.get_data()

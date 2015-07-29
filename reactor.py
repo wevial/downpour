@@ -44,7 +44,7 @@ class Reactor:
                 if not new_data:
                     break
                 data += new_data
-                print 'MOAR DATA', len(data)
+                print 'MOAR DATA', len(new_data)
         if not data:
             raise IOError('Reactor.read_all passed an empty socket') 
         return data

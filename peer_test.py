@@ -44,7 +44,7 @@ class TestBuffer(unittest.TestCase):
     def test_buffer_plus_message_unchoke(self):
         mypeer = Peer('127.0.0.1', 6881)
         mypeer.buf = ''
-        mypeer.convert_bytes_to_messages('\x00\x00\x00\x01\xff')
+        mypeer.process_and_act_on_incoming_data('\x00\x00\x00\x01\x01\xff')
         self.assertEqual(mypeer.buf, '\xff')
         self.assertFalse(mypeer.peer_is_choking_client)
 

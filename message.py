@@ -36,7 +36,7 @@ class Msg(object):
                 # return from parse_buffer with message list & buf = buf
                 break
             else:
-                msg_id = struct.unpack('!B', buf[3])[0]
+                msg_id = struct.unpack('!B', buf[4])[0]
                 if msg_id == 0:
                     messages.append(ChokeMsg())
                 elif msg_id == 1:
@@ -62,7 +62,7 @@ class Msg(object):
                 elif msg_id == 8:
                     block_info = struct.unpack('!III', buf[5:17])
                     messages.append( CancelMsg(block_info = block_info) )
-            buf = buf[msg_len + 3:]
+            buf = buf[msg_len + 4:]
         return (messages, buf) # buf is remaining unprocessed bytes 
 
 
