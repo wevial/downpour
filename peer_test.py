@@ -40,7 +40,6 @@ class TestBuffer(unittest.TestCase):
         mypeer.process_and_act_on_incoming_data('\x00\x00\x00\x00\x00')
         self.assertEqual(mypeer.buf, '\x00')
 
-
     def test_buffer_plus_message_unchoke(self):
         mypeer = Peer('127.0.0.1', 6881)
         mypeer.buf = ''

@@ -23,7 +23,6 @@ class Msg(object):
             # Handshake is handled separately
             if len(buf) < 4:
                 break
-            
 
             msg_len = struct.unpack('!I', buf[:4])[0]
             print 'message length', msg_len
@@ -72,11 +71,17 @@ class KeepAliveMsg(Msg):
         Msg.__init__(self, 'keep_alive', msg_id)
         self.info_to_pack = ('!I', 0)
 
+    def __repr__(self):
+        return 'keep alive'
+
 class ChokeMsg(Msg):
     def __init__(self):
         msg_id = 0
         Msg.__init__(self, 'choke', msg_id)
         self.info_to_pack = self.info_to_pack + (msg_id,)
+
+    def __repr__(self):
+        return 'choke'
 
 class UnchokeMsg(Msg):
     def __init__(self):
@@ -84,11 +89,17 @@ class UnchokeMsg(Msg):
         Msg.__init__(self, 'unchoke', msg_id)
         self.info_to_pack = self.info_to_pack + (msg_id,)
 
+    def __repr__(self):
+        return 'unchoke'
+
 class InterestedMsg(Msg):
     def __init__(self):
         msg_id = 2
         Msg.__init__(self, 'interested', msg_id)
         self.info_to_pack = self.info_to_pack + (msg_id,)
+
+    def __repr__(self):
+        return 'interested'
 
 class UninterestedMsg(Msg):
     def __init__(self):
@@ -96,12 +107,18 @@ class UninterestedMsg(Msg):
         Msg.__init__(self, 'uninterested', msg_id)
         self.info_to_pack = self.info_to_pack + (msg_id,)
 
+    def __repr__(self):
+        return 'uninterested'
+
 class HaveMsg(Msg):
     def __init__(self, piece_index):
         msg_id = 4
         Msg.__init__(self, 'have', msg_id)
         self.piece_index = piece_index
         self.info_to_pack = ('!IBI', 5, 4, piece_index)
+
+    def __repr__(self):
+        return 'Have'
 
 class BitfieldMsg(Msg):
     msg_len = 1
@@ -112,6 +129,9 @@ class BitfieldMsg(Msg):
         self.buffer_to_send = bitfield_buf
         self.info_to_pack = ('!IB', self.msg_len, msg_id)
 
+    def __repr__(self):
+        return 'Bitfield'
+
 class RequestMsg(Msg):
     msg_len = 13
     pack_prefix = '!IBIII'
@@ -120,6 +140,9 @@ class RequestMsg(Msg):
         Msg.__init__(self, 'request', msg_id)
         self.block_info = block_info
         self.info_to_pack = (self.pack_prefix, self.msg_len, msg_id) + block_info
+
+    def __repr__(self):
+        return 'Request'
 
 class BlockMsg(Msg):
     msg_len = 9
@@ -132,6 +155,9 @@ class BlockMsg(Msg):
         self.block_info = block_info
         self.info_to_pack = (self.pack_prefix, self.msg_len, msg_id) + block_info[:2]
 
+    def __repr__(self):
+        return 'Block'
+
 class CancelMsg(Msg):
     msg_len = 13
     pack_prefix = '!IBIII'
@@ -140,6 +166,9 @@ class CancelMsg(Msg):
         Msg.__init__(self, 'cancel', msg_id)
         self.block_info = block_info
         self.info_to_pack = (self.pack_prefix, self.msg_len, msg_id) + self.block_info
+
+    def __repr__(self):
+        return 'Cancel'
 
 def receive_data(peer, amount_expected, block_size=4096):
     try:
