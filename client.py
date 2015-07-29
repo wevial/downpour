@@ -7,7 +7,6 @@ from textwrap import wrap
 from tracker import Tracker
 import peer
 import message
-import pieces
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
 
@@ -25,7 +24,6 @@ class Client(object):
 #        print metainfo_data
         self.info_hash = H.sha1(B.bencode(metainfo_data)).digest()
         self.piece_length = metainfo_data['piece length']
-        pieces.Piece.set_piece_length(self.piece_length)
         self.piece_hashes = wrap(metainfo_data['pieces'], 20)
         peer.Peer.num_pieces = len(self.piece_hashes)
         # Currently only worrying about ONE FILE torrents
