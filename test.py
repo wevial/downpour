@@ -18,8 +18,12 @@ print 'List of peers (', len(peers), '):\n\t', peers
 print "Hardcoded 'peer' to Tom's ip/port =", tom
 
 print 'Sending handshake...'
-handshake = c.send_and_receive_handshake(tom)
+t_handshake = tom.send_and_receive_handshake(c.handshake)
 #handshake = c.send_and_receive_handshake(peers[0]) # Frank's
-handshake = c.verify_handshake(handshake)
-print 'Handshake verified'
+handshake = tom.verify_handshake(t_handshake, c.info_hash)
+if handshake:
+    print 'Handshake verified'
+    tom.initiate_messages(t_handshake, c.info_hash)
+else:
+    print 'Wrong info_hash'
 

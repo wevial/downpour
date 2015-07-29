@@ -5,12 +5,13 @@ from bitstring import BitArray
 from textwrap import wrap
 
 from tracker import Tracker
-#import peer
+import peer
 import message
+import pieces
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
 
-class Client:
+class Client(object):
     def __init__(self, torrent):
         self.torrent = torrent
         self.peer_id = '-TZ-0000-00000000000'
@@ -24,7 +25,9 @@ class Client:
 #        print metainfo_data
         self.info_hash = H.sha1(B.bencode(metainfo_data)).digest()
         self.piece_length = metainfo_data['piece length']
+        pieces.Piece.set_piece_length(self.piece_length)
         self.piece_hashes = wrap(metainfo_data['pieces'], 20)
+        peer.Peer.num_pieces = len(self.piece_hashes)
         # Currently only worrying about ONE FILE torrents
         # Would have to change these for multi-file
         self.file_name = metainfo_data['name']
@@ -49,39 +52,9 @@ class Client:
         self.tracker.send_request_and_parse_response()
         self.build_handshake()
 
-    def send_and_receive_handshake(self, peer):
-        peer.connect()
-        print 'You have connected to your peer!'
-        peer.sendall(self.handshake)
-        print 'Sending handshake to peer...'
-        peer_handshake = message.receive_data(peer, amount_expected=68, block_size=68)
-        print 'Peer handshake has been received.'
-        return peer_handshake
-
-    def verify_handshake(self, handshake):
-        # lenpstr - pstr - reserved - info hash - peer id
-        (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
-        return peer_hash == self.info_hash
-
     def add_peer(self, id_num, peer):
         self.peers[id_num] = peer
     
-    def set_flag(self, peer_id, flag):
-        peer = this.peers[peer_id]
-        if flag == 'choke':
-            peer.peer_is_choking_client == True
-        if flag == 'unchoke': 
-            peer.peer_is_choking_client == False
-            if peer.am_interested:
-                self.send_request(peer, self.select_request())
-        if flag == 'interested':
-            peer.peer_is_interested == True
-            # Assuming we always unchoke when receiving interested message
-            peer.am_choking_peer == False
-            self.send_message(peer, 'unchoke')
-        if flag == 'uninterested':
-            peer.peer_is_interested == False
-        
     def update_timeout(peer_id):
         pass
 
