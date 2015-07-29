@@ -45,7 +45,7 @@ class Peer:
 
     def initiate_messages(self, handshake, info_hash):
         if self.verify_handshake(handshake, info_hash):
-            self.send_message(message.Msg(2))
+            self.send_message(message.InterestedMsg())
         else:
             raise ConfirmationError('peer handshake does not match info hash')
 
@@ -64,25 +64,25 @@ class Peer:
         self.update_buffer(buf)
 
     def act_on_messages(self, messages):
-        message_handlers = {
+        message_actions = {
                 -1: self.keep_alive,
                 # Use partial/bound functions for these 3
-                0: self.set_flag, # bind flag_id = 0,
-                1: self.set_flag, # (flag_id = 1),
-                2: self.set_flag, # (flag_id = 2),
-                3: self.set_flag, # (flag_id = 3),
-                4: self.update_bitfield, # bind bitfield from message
-                5: self.set_bitfield, # bind piece_index from message
-                6: self.queue_up_block, # bind block_info from message
-                7: self.update_and_store_block, # bind block from message
-                8: self.clear_requests 
+                0: (self.set_flag, ('msg_id',)), 
+                1: (self.set_flag, ('msg_id',)),
+                2: (self.set_flag, ('msg_id',)),
+                3: (self.set_flag, ('msg_id',)),
+                4: (self.update_bitfield, ('bitfield_buf',)),
+                5: (self.set_bitfield, ('piece_index',)), 
+                6: (self.queue_up_block, ('block_info',)),
+                7: (self.update_and_store_block, ('block_info', 'block')),
+                8: (self.clear_requests, ('block_info',)), 
                 }
                 
         for message in messages:
             # Call message handler with arguments from message
-            print message.msg_name
-            # How could we make this more modular?
-            # Maybe the functions could be class methods for the message classes
+            (message_action, message_params) = message_actions[message.msg_id]
+            message_args = [getattr(message, param) for param in message_params] 
+            message_action(*message_args)
 
     def update_buffer(self, buf):
         self.buf = buf
