@@ -3,7 +3,6 @@ import socket
 from bitstring import BitArray
 import message
 import struct 
-from message import Msg
 
 class Peer:
     def __init__(self, ip, port):
@@ -58,10 +57,10 @@ class Peer:
         print 'Peer handshake has been received.'
         return peer_handshake
 
-    def convert_bytes_to_messages(self, data):
-        (messages, buf) = Msg.get_messages_from_buffer(self.buf + data)
+    def process_and_act_on_incoming_data(self, data):
+        (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
         self.act_on_messages(messages)
-        self.update_buffer(buf)
+        self.update_buffer(buf_remainder)
 
     def act_on_messages(self, messages):
         message_actions = {
@@ -112,7 +111,7 @@ class Peer:
             self.peer_is_interested = True
             # Assuming we always unchoke when receiving interested message
             self.am_choking_peer = False
-            self.send_message(message.Msg(1))
+            self.send_message(message.UnchokeMsg())
         if flag_id == 3:
             self.peer_is_interested = False
 
@@ -125,7 +124,7 @@ class Peer:
     def update_bitfield(self, piece_index):
         if not self.bitfield[ piece_index ]:
             self.bitfield.invert(piece_index)
-            self.client.increment_piece_count(self.peer_id, piece_index)
+            self.client.increment_piece_count(piece_index, self.peer_id)
         else:
             raise PeerCommunicationError('redundant have message')
 

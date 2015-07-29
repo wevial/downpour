@@ -24,7 +24,7 @@ class Msg(object):
                 break
             
             msg_len = struct.unpack('!I', buf[0:4])[0]
-
+            print 'message length', msg_len
             if msg_len == 0:
                 # Keep alive message => prevent peer from timing out
                 messages.append(Msg('keep_alive'))
@@ -33,7 +33,8 @@ class Msg(object):
                 # return from parse_buffer with message list & buf = buf
                 break
             else:
-                msg_id = struct.unpack('!B', buf[4])[0]
+                msg_id = struct.unpack('!B', buf[3])[0]
+                print 'message id: ', msg_id
                 if msg_id == 0:
                     messages.append(ChokeMsg())
                 elif msg_id == 1:
@@ -59,11 +60,9 @@ class Msg(object):
                 elif msg_id == 8:
                     block_info = struct.unpack('!iii', buf[5:17])
                     messages.append( CancelMsg(block_info = block_info) )
-            buf = buf[msg_len + 4:]
-        return (messages, buf)
+            buf = buf[msg_len + 3:]
+        return (messages, buf) # buf is remaining unprocessed bytes 
 
-
-#To be refactored out of existence
 
 class KeepAliveMsg(Msg):
     def __init__(self):

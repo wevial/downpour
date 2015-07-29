@@ -23,16 +23,18 @@ class testBuffer(unittest.TestCase):
         mypeer = Peer('127.0.0.1', 6881)
         mypeer.buf = '\x00'
         self.assertEqual(mypeer.buf, '\x00')
-    def test_convert_bytes(self):
+    def test_convert_keep_alive(self):
         mypeer = Peer('127.0.0.1', 6881)
         mypeer.buf = ''
-        mypeer.convert_bytes_to_messages('\x00\x00\x00\xff\x00')
+        mypeer.process_and_act_on_incoming_data('\x00\x00\x00\xff\x00')
         self.assertEqual(mypeer.buf, '\x00\x00\x00\xff\x00')
-    def test_buf_plus_message(self):
+    def test_buf_plus_keep_alive_message(self):
         mypeer = Peer('127.0.0.1', 6881)
         mypeer.buf = ''
-        mypeer.convert_bytes_to_messages('\x00\x00\x00\x00\x00')
+        mypeer.process_and_act_on_incoming_data('\x00\x00\x00\x00\x00')
         self.assertEqual(mypeer.buf, '\x00')
+        mypeer.act_on_messages.assert_called_with(
+
 
 
 if __name__ == '__main__':
