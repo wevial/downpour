@@ -13,7 +13,7 @@ class Reactor:
         self.readers = {}
         self.sockets = []
         for peer in peer_list:
-            self.register_reader(peer.socket, peer.convert_bytes_to_messages)
+            self.register_reader(peer.socket, peer.process_and_act_on_incoming_data)
 
     def register_reader(self, socket, callback):
         self.sockets.append(socket)

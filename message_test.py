@@ -1,22 +1,18 @@
-from message import Msg, BitfieldMsg, HaveMsg, RequestMsg, ChokeMsg, UnchokeMsg, InterestedMsg, UninterestedMsg
+from message import Msg, BitfieldMsg, HaveMsg, RequestMsg, ChokeMsg, UnchokeMsg, InterestedMsg, UninterestedMsg, KeepAliveMsg
 import unittest
 
 class TestKeepAlive(unittest.TestCase):
-    def test_keep_alive_name(self):
-        keep_alive = Msg('keep_alive')
-        self.assertEqual(keep_alive.msg_name, 'keep_alive')
 
-    def test_keep_alive_no_id(self):
-        keep_alive = Msg('keep_alive')
-        with self.assertRaises(AttributeError):
-            keep_alive.msg_id
+    def test_keep_alive_to_bytes(self):
+        keep_alive = KeepAliveMsg() 
+        self.assertEqual(keep_alive.get_buffer_from_message(), '\x00\x00\x00\x00')
 
     def test_parse_keep_alive(self):
-        (keep_alive, buf) = Msg.get_messages_from_buffer('\x00\x00\x00\x00')
-        self.assertEqual(keep_alive[0].msg_name, 'keep_alive')
+        (messages, buf) = Msg.get_messages_from_buffer('\x00\x00\x00\x00')
+        self.assertEqual(messages[0].msg_name, 'keep_alive')
 
     def test_parse_keep_alive_extra_bytes(self):
-        (keep_alive, buf) = Msg.get_messages_from_buffer('\x00\x00\x00\x00\x01')
+        (messages, buf) = Msg.get_messages_from_buffer('\x00\x00\x00\x00\x01')
         self.assertEqual(buf, '\x01')
         
 class TestChoke(unittest.TestCase):
@@ -36,7 +32,7 @@ class TestBitField(unittest.TestCase):
         self.assertEqual(bitfield.msg_name, 'bitfield')
     def test_bitfield_buf(self):
         bitfield = BitfieldMsg(**{'bitfield_buf': '\x00\xff'})
-        self.assertEqual(bitfield.bitfield_buf, '\x00\xff')
+        self.assertEqual(bitfield.buffer_to_send, '\x00\xff')
     def test_bitfield_buf_no_piece_index(self):
         bitfield = BitfieldMsg(**{'bitfield_buf': '\x00\xff'})
         with self.assertRaises(AttributeError):
@@ -51,18 +47,15 @@ class TestHave(unittest.TestCase):
     def test_parse_have_is_message(self):
         (msgs, buf) = HaveMsg.get_messages_from_buffer('\x00\x00\x00\x05\x04\x00\x00\x00\x11')
         self.assertEqual(msgs[0].piece_index, 17)
-    def test_get_contents(self):
-        have = HaveMsg( **{'piece_index': 17})
-        self.assertEqual(have.get_message_contents(), (17,))
 
 class TestRequest(unittest.TestCase):
     def test_have_block_info(self):
         request = RequestMsg( **{'block_info': (5, 3701, 2600)})
         self.assertEqual(request.block_info,  (5, 3701, 2600))
 
-    def test_get_contents(self):
+    def test_get_block_info(self):
         request = RequestMsg( **{'block_info': (5, 3701, 2600)})
-        self.assertEqual(request.get_message_contents(), (5, 3701, 2600))
+        self.assertEqual(request.block_info, (5, 3701, 2600))
 
 class TestBufferToMessage(unittest.TestCase):
     def test_choke_to_buffer_and_back(self):

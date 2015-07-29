@@ -25,7 +25,7 @@ class Msg(object):
                 break
             
             msg_len = struct.unpack('!I', buf[0:4])[0]
-
+            print 'message length', msg_len
             if msg_len == 0:
                 # Keep alive message => prevent peer from timing out
                 messages.append(KeepAliveMsg())
@@ -61,10 +61,8 @@ class Msg(object):
                     block_info = struct.unpack('!iii', buf[5:17])
                     messages.append( CancelMsg(block_info = block_info) )
             buf = buf[msg_len + 3:]
-        return (messages, buf)
+        return (messages, buf) # buf is remaining unprocessed bytes 
 
-
-#To be refactored out of existence
 
 class KeepAliveMsg(Msg):
     def __init__(self):
