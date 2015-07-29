@@ -12,31 +12,17 @@ class Msg(object):
             self.pack_prefix = '!I'
             self.msg_len = 0
             self.msg_id = -1
+            self.info_to_pack = (self.pack_prefix, self.msg_len)
+
         self.msg_name = msg_name 
+        #Not sure this will work...
+        self.info_to_pack = (self.pack_prefix, self.msg_len, self.msg_id)
 
-    def get_message_contents(self):
-        if self.msg_name == 'have':
-            return self.piece_index,
-        if self.msg_name == 'request':
-            return self.block_info
-        if self.msg_name == 'piece':
-            return self.block_info[:2]
-
-#Should these message-type specific pieces get extracted/abstracted?
-#Maybe a unique class for each message type?
-#There are two types of information here - index things & bytes
+    # Are these functions that I would rather include in individual classes?
+    # It would certainly be more modular...
 
     def get_buffer_from_message(self):
-        msg_len = self.msg_len
-        msg_id = self.msg_id 
-        pack_prefix = self.pack_prefix
-        extras = self.get_message_contents()
-        if msg_id == -1:
-            return struct.pack(pack_prefix, msg_len)
-        if not extras:
-            return struct.pack(pack_prefix, msg_len, msg_id)
-        return struct.pack(pack_prefix, msg_len, msg_id, 
-                *(extras))
+        return struct.pack(self.info_to_pack) + self.buffer_to_send
 
     @staticmethod
     def get_messages_from_buffer(buf):
@@ -116,6 +102,7 @@ class HaveMsg(Msg):
     def __init__(self, piece_index):
         Msg.__init__(self, 'have')
         self.piece_index = piece_index
+        self.info_to_pack = (self.pack_prefix, self.msg_len, self.msg_id, self.piece_index)
 
 class BitfieldMsg(Msg):
     msg_len = 1
@@ -123,7 +110,8 @@ class BitfieldMsg(Msg):
     def __init__(self, bitfield_buf):
         Msg.__init__(self, 'bitfield')
         self.msg_len = self.msg_len + len(bitfield_buf)
-        self.bitfield_buf = bitfield_buf
+        self.buffer_to_send = bitfield_buf
+        self.info_to_pack = (self.pack_prefix, self.msg_len, self.msg_id)
 
 class RequestMsg(Msg):
     msg_id = 6
@@ -131,7 +119,7 @@ class RequestMsg(Msg):
     pack_prefix = '!IBIII'
     def __init__(self, block_info):
         Msg.__init__(self, 'request')
-        self.block_info = block_info
+        self.info_to_pack = (self.pack_prefix, self.msg_len, self.msg_id) + block_info
 
 class BlockMsg(Msg):
     msg_id = 7
@@ -140,8 +128,8 @@ class BlockMsg(Msg):
     def __init__(self, block_info, block):
         Msg.__init__(self, 'piece')
         self.msg_len = self.msg_len + len(block) 
-        self.block_info = block_info
-        self.block = block
+        self.buffer_to_send = block
+        self.info_to_pack = (self.pack_prefix, self.msg_len, self.msg_id) + block_info[:2]
 
 class CancelMsg(Msg):
     msg_id = 8
@@ -150,6 +138,7 @@ class CancelMsg(Msg):
     def __init__(self, block_info):
         Msg.__init__(self, 'cancel')
         self.block_info = block_info
+        self.info_to_pack = (self.pack_prefix, self.msg_len, self.msg_id) + self.block_info
 
 def receive_data(peer, amount_expected, block_size=4096):
     try:
