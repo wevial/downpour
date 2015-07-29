@@ -1,7 +1,7 @@
 import time
 import socket
 from bitstring import BitArray
-import message
+import message as M
 import struct 
 
 class Peer:
@@ -33,7 +33,7 @@ class Peer:
 
     # TODO: Set up message queue to maximize bytes per trip over the servers.
     def send_message(self, message):
-        bytes_to_send = Msg.get_buffer_from_message(message)
+        bytes_to_send = M.Msg.get_buffer_from_message(message)
         self.sendall(bytes_to_send) 
 
     def verify_handshake(self, handshake, info_hash):
@@ -44,7 +44,7 @@ class Peer:
 
     def initiate_messages(self, handshake, info_hash):
         if self.verify_handshake(handshake, info_hash):
-            self.send_message(message.InterestedMsg())
+            self.send_message(M.InterestedMsg())
         else:
             raise ConfirmationError('peer handshake does not match info hash')
 
@@ -53,13 +53,13 @@ class Peer:
         print 'You have connected to your peer!'
         self.sendall(handshake)
         print 'Sending handshake to peer...'
-        peer_handshake = message.receive_data(self, amount_expected=68, block_size=68)
+        peer_handshake = M.receive_data(self, amount_expected=68, block_size=68)
         print 'Peer handshake has been received.'
         return peer_handshake
 
     def process_and_act_on_incoming_data(self, data):
-        (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
-        #(messages, buf) = message.Msg.get_messages_from_buffer(self.buf + data)
+        print 'whee, i got data!'
+        (messages, buf_remainder) = M.Msg.get_messages_from_buffer(self.buf + data)
         self.act_on_messages(messages)
         self.update_buffer(buf_remainder)
 
@@ -108,13 +108,13 @@ class Peer:
     def peer_stops_choking_client(self):
         self.peer_is_choking_client = False
         if self.am_interested:
-            self.send_message(message.requestMsg(self.client.select_request()))
+            self.send_message(M.requestMsg(self.client.select_request()))
 
     def peer_is_now_interested(self):
         self.peer_is_interested = True
         # Assuming we always unchoke when receiving interested message
         self.am_choking_peer = False
-        self.send_message(message.Msg(1))
+        self.send_message(M.Msg(1))
 
     def peer_is_no_longer_interested(self):
         self.peer_is_interested = False
@@ -136,7 +136,7 @@ class Peer:
     def queue_up_block(self, block_info):
         assert not self.am_choking_peer
         block = self.client.get_block(block_info)
-        self.send_message(message.blockMsg(7, block_info = block_info, block = block))
+        self.send_message(M.blockMsg(7, block_info = block_info, block = block))
 
     #After block message
     def update_and_store_block(self, block_info, block):

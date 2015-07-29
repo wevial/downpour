@@ -7,7 +7,6 @@ from textwrap import wrap
 from tracker import Tracker
 import peer
 import message
-import pieces
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
 

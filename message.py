@@ -32,8 +32,9 @@ class Msg(object):
                     raise IOError('WTF, another handshake?')
             except IOError as e:
                 print e.message
-            msg_len = struct.unpack('!I', buf[0:4])[0]
+            msg_len = struct.unpack('!I', buf[:4])[0]
             print 'message length', msg_len
+            print 'buf len(reactor)', len(buf)
             if msg_len == 0:
                 # Keep alive message => prevent peer from timing out
                 messages.append(KeepAliveMsg())
@@ -58,15 +59,15 @@ class Msg(object):
                     bitfield_buf = buf[5:5 + msg_len - 1]
                     messages.append( BitfieldMsg(bitfield_buf = bitfield_buf) )
                 elif msg_id == 6:
-                    block_info = struct.unpack('!iii', buf[5:17])
+                    block_info = struct.unpack('!III', buf[5:17])
                     messages.append( RequestMsg(block_info = block_info) ) 
                 elif msg_id == 7:
-                    piece_index, block_index = struct.unpack('!ii', buf[5:13])
+                    piece_index, block_index = struct.unpack('!II', buf[5:13])
                     block = buf[13:] # buffer is in bytes form, no need to unpack
                     block_info = (piece_index, block_index, len(block))
                     messages.append( BlockMsg(block_info = block_info, block = block) )
                 elif msg_id == 8:
-                    block_info = struct.unpack('!iii', buf[5:17])
+                    block_info = struct.unpack('!III', buf[5:17])
                     messages.append( CancelMsg(block_info = block_info) )
             buf = buf[msg_len + 3:]
         return (messages, buf) # buf is remaining unprocessed bytes 
