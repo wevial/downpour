@@ -5,7 +5,7 @@ import message as M
 import struct 
 
 class Peer:
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, num_pieces):
         self.ip = ip
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,7 +17,7 @@ class Peer:
         self.time_of_last_msg = time.time()
         self.is_alive = False
         #Hardcoding length for testing, but this needs to change
-        self.bitfield = BitArray(length=20)
+        self.bitfield = BitArray(num_pieces)
         
     def __repr__(self):
         return str((self.ip, self.port))
