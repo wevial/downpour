@@ -55,6 +55,23 @@ class Client(object):
     def add_peer(self, id_num, peer):
         self.peers[id_num] = peer
     
-    def update_timeout(peer_id):
+    def update_timeout(self, peer_id):
         pass
 
+    def select_request(self):
+        pass
+
+    def update_pieces_count(self, peer_id, bitfield):
+        pass
+
+    def increment_piece_count(self, peer_id, piece_index):
+        pass
+
+    def get_block(self, block_info):
+        pass
+
+    def update_block_info(self, block_info):
+        pass
+
+    def write_block_to_file(self, block_info, block):
+        pass

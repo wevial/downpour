@@ -125,7 +125,7 @@ class Peer:
     def update_bitfield(self, piece_index):
         if not self.bitfield[ piece_index ]:
             self.bitfield.invert(piece_index)
-            self.client.increment_piece_count(piece_index, self.peer_id)
+            self.client.increment_piece_count(self.peer_id, piece_index)
         else:
             raise PeerCommunicationError('redundant have message')
 
