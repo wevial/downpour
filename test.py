@@ -9,7 +9,7 @@ c.setup_client_and_tracker()
 
 print 'Client, tracker set up.'
 peers = c.peers
-tom = P.Peer('96.126.104.219', 54465)
+tom = P.Peer('96.126.104.219', 54465, c.num_pieces)
 for peer in peers.values():
     print peer
     if peer.ip == '96.126.104.219':

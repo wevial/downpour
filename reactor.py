@@ -27,7 +27,6 @@ class Reactor:
         rlist, _, _ = select.select(self.sockets, [], [])
         for socket in rlist:
             data = self.read_all(socket)
-            print data
             self.readers[socket](data)
         
     @staticmethod
@@ -43,8 +42,6 @@ class Reactor:
             else:
                 if not new_data:
                     break
-                print 'more data!'
-                print data
                 data += new_data
                 print 'MOAR DATA', len(data)
         if not data:

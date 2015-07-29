@@ -23,15 +23,6 @@ class Msg(object):
             # Handshake is handled separately
             if len(buf) < 4:
                 break
-            try:
-                #grab first 68 bytes & check if it's a handshake
-                (pstrlen, pstr) = struct.unpack('!B10s')
-                print pstrlen
-                print pstr
-                if pstr == 'BitTorrent':
-                    raise IOError('WTF, another handshake?')
-            except IOError as e:
-                print e.message
             msg_len = struct.unpack('!I', buf[:4])[0]
             print 'message length', msg_len
             print 'buf len(reactor)', len(buf)
@@ -43,7 +34,8 @@ class Msg(object):
                 # return from parse_buffer with message list & buf = buf
                 break
             else:
-                msg_id = struct.unpack('!B', buf[3])[0]
+                msg_id = struct.unpack('!B', buf[4])[0]
+                print 'msg id: ', msg_id
                 if msg_id == 0:
                     messages.append(ChokeMsg())
                 elif msg_id == 1:
@@ -69,7 +61,7 @@ class Msg(object):
                 elif msg_id == 8:
                     block_info = struct.unpack('!III', buf[5:17])
                     messages.append( CancelMsg(block_info = block_info) )
-            buf = buf[msg_len + 3:]
+            buf = buf[msg_len + 4:]
         return (messages, buf) # buf is remaining unprocessed bytes 
 
 
@@ -149,6 +141,7 @@ class CancelMsg(Msg):
         self.info_to_pack = (self.pack_prefix, self.msg_len, msg_id) + self.block_info
 
 def receive_data(peer, amount_expected, block_size=4096):
+    assert amount_expected > 0
     try:
         data_received = ''
         amount_received = 0
