@@ -3,7 +3,6 @@ import socket
 from bitstring import BitArray
 import message
 import struct 
-from message import Msg
 
 class Peer:
     def __init__(self, ip, port):
@@ -33,8 +32,8 @@ class Peer:
         return self.socket.recv(num_bytes)
 
     # TODO: Set up message queue to maximize bytes per trip over the servers.
-    def send_message(self, Msg):
-        bytes_to_send = Msg.get_buffer_from_message()
+    def send_message(self, message):
+        bytes_to_send = Msg.get_buffer_from_message(message)
         self.sendall(bytes_to_send) 
 
     def verify_handshake(self, handshake, info_hash):
@@ -59,29 +58,29 @@ class Peer:
         return peer_handshake
 
     def convert_bytes_to_messages(self, data):
-        (messages, buf) = Msg.get_messages_from_buffer(self.buf + data)
+        (messages, buf) = message.Msg.get_messages_from_buffer(self.buf + data)
         self.act_on_messages(messages)
         self.update_buffer(buf)
 
     def act_on_messages(self, messages):
         message_actions = {
-                -1: self.keep_alive,
+                -1: (self.keep_alive, []),
                 # Use partial/bound functions for these 3
-                0: (self.set_flag, ('msg_id',)), 
-                1: (self.set_flag, ('msg_id',)),
-                2: (self.set_flag, ('msg_id',)),
-                3: (self.set_flag, ('msg_id',)),
-                4: (self.update_bitfield, ('bitfield_buf',)),
-                5: (self.set_bitfield, ('piece_index',)), 
-                6: (self.queue_up_block, ('block_info',)),
-                7: (self.update_and_store_block, ('block_info', 'block')),
-                8: (self.clear_requests, ('block_info',)), 
+                0: (self.peer_starts_choking_client, []), 
+                1: (self.peer_stops_choking_client, []),
+                2: (self.peer_is_now_interested, []),
+                3: (self.peer_is_no_longer_interested, []),
+                4: (self.update_bitfield, ['bitfield_buf']),
+                5: (self.setup_bitfield, ['piece_index']), 
+                6: (self.queue_up_block, ['block_info']),
+                7: (self.update_and_store_block, ['block_info', 'block']),
+                8: (self.clear_requests, ['block_info']), 
                 }
                 
-        for message in messages:
+        for msg in messages:
             # Call message handler with arguments from message
-            (message_action, message_params) = message_actions[message.msg_id]
-            message_args = [getattr(message, param) for param in message_params] 
+            (message_action, message_params) = message_actions[msg.msg_id]
+            message_args = [getattr(msg, param) for param in message_params] 
             message_action(*message_args)
 
     def update_buffer(self, buf):
@@ -101,33 +100,35 @@ class Peer:
         return self.is_alive
 
     #Upon message id 0-3
-    def set_flag(self, flag_id):
-        if flag_id == 0:
-            self.peer_is_choking_client = True
-        if flag_id == 1:
-            self.peer_is_choking_client = False
-            if self.am_interested:
-                self.send_message(message.requestMsg(self.client.select_request()))
-        if flag_id == 2:
-            self.peer_is_interested = True
-            # Assuming we always unchoke when receiving interested message
-            self.am_choking_peer = False
-            self.send_message(message.Msg(1))
-        if flag_id == 3:
-            self.peer_is_interested = False
+    def peer_starts_choking_client(self):
+        self.peer_is_choing_client = True
+
+    def peer_stops_choking_client(self):
+        self.peer_is_choking_client = False
+        if self.am_interested:
+            self.send_message(message.requestMsg(self.client.select_request()))
+
+    def peer_is_now_interested(self):
+        self.peer_is_interested = True
+        # Assuming we always unchoke when receiving interested message
+        self.am_choking_peer = False
+        self.send_message(message.Msg(1))
+
+    def peer_is_no_longer_interested(self):
+        self.peer_is_interested = False
 
     #When receiving bitfield
-    def set_bitfield(self, bitfield_buf):
+    def setup_bitfield(self, bitfield_buf):
         self.bitfield = BitArray(bytes=bitfield_buf) 
         self.client.update_pieces_count(self.peer_id, self.bitfield)
 
     #When receiving have message
     def update_bitfield(self, piece_index):
-        if not self.bitfield[ piece_index ]:
+        if not self.bitfield[piece_index]:
             self.bitfield.invert(piece_index)
             self.client.increment_piece_count(self.peer_id, piece_index)
         else:
-            raise PeerCommunicationError('redundant have message')
+            raise PeerCommunicationError('Redundant "Have" message.')
 
     #After request
     def queue_up_block(self, block_info):

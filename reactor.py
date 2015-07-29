@@ -25,27 +25,26 @@ class Reactor:
 
     def read_from_live_sockets(self):
         rlist, _, _ = select.select(self.sockets, [], [])
-        for sock in rlist:
-            data = self.read_all(sock)
-            self.readers[sock](data)
+        for socket in rlist:
+            data = self.read_all(socket)
+            self.readers[socket](data)
         
     @staticmethod
-    def read_all(sock):
+    def read_all(socket):
         data = ''
         while True:
             try:
-                new_data=sock.recv(MSG_LENGTH)
-            except sock.error as e:
+                new_data = socket.recv(MSG_LENGTH)
+            except socket.error as e:
                 if e.args[0] == errno.EWOULDBLOCK:
                     break
-                raise
+                raise IOError('WTF SOCKET: Something went wrong with the socket')
             else:
                 if not new_data:
                     break
-                else:
-                    data += new_data
+                data += new_data
         if not data:
-            raise IOError('read all passed an empty socket') 
+            raise IOError('Reactor.read_all passed an empty socket') 
         return data
     
 
