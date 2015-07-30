@@ -20,17 +20,34 @@ class Client(object):
     def decode_torrent(self):
         f = open(self.torrent, 'r')
         metainfo = B.bdecode(f.read())
-        self.announce_url = metainfo['announce']
         metainfo_data = metainfo['info'] # Un-bencoded dictionary
+
+        #Tracker
+        self.announce_url = metainfo['announce']
+
+        #Pieces?
+        self.file_name = metainfo_data['name']
+        self.setup_pieces(metainfo_data['piece length'],
+                wrap(metainfo_data['pieces'], 20))
+
+        self.left = metainfo_data['length']
+
+
         self.info_hash = H.sha1(B.bencode(metainfo_data)).digest()
+        self.num_pieces = len(self.piece_hashes) # Total number of pieces
+        self.bitfield = BitArray(self.num_pieces)
+
+    def setup_pieces(self, length, hash_list):
+        pieces = []
+        last_piece_length = self.left - (self.num_pieces - 1) * length
+        for i in range(self.num_pieces):
+            if i == num_pieces - 1:
+                length = last_piece_length
+            piece = Piece(i, length, hash_list[i]) 
+            
+
         self.piece_length = metainfo_data['piece length']
         self.piece_hashes = wrap(metainfo_data['pieces'], 20)
-        self.num_pieces = len(self.piece_hashes) # Total number of pieces
-        self.piece_peer_list = [[] for _ in range(self.num_pieces)]
-        self.rarity = [0 for _ in range(self.num_pieces)] 
-        self.bitfield = BitArray(self.num_pieces)
-        self.file_name = metainfo_data['name']
-        self.left = metainfo_data['length']
 
     #DOUBLE CHECK NAMES
     def setup_piece_info_peers(self):
@@ -76,6 +93,9 @@ class Client(object):
         pass
 
     def write_block_to_file(self, block_info, block):
+        (piece_index, begin, block_length) = block_info
+
+
         pass
 
     ##### HELPER FUNCTIONS #####
