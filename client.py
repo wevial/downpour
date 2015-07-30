@@ -8,13 +8,13 @@ from tracker import Tracker
 import message
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
+BLOCK_LENGTH = 2 ** 14
 
 class Client(object):
     def __init__(self, torrent):
         self.torrent = torrent
         self.peer_id = '-TZ-0000-00000000000'
         self.peers = {}
-        self.piece_info_dict = {}
         self.setup_client_and_tracker()
 
     def decode_torrent(self):
@@ -26,13 +26,15 @@ class Client(object):
         self.piece_length = metainfo_data['piece length']
         self.piece_hashes = wrap(metainfo_data['pieces'], 20)
         self.num_pieces = len(self.piece_hashes) # Total number of pieces
+        self.piece_peer_list = [[] for _ in range(self.num_pieces)]
+        self.rarity = [0 for _ in range(self.num_pieces)] 
         self.bitfield = BitArray(self.num_pieces)
         self.file_name = metainfo_data['name']
         self.left = metainfo_data['length']
 
-    def setup_piece_info_dict(self, num_pieces):
+    def setup_piece_peer_list(self, num_pieces):
         for i in range(num_pieces):
-            self.piece_info_dict[i] = []
+            self.piece_peer_list[i] = []
         
 
     def build_handshake(self):
@@ -60,12 +62,12 @@ class Client(object):
     def update_timeout(self, peer_id):
         pass
 
-    def select_request(self):
+    def select_request_random(self):
         pass
 
-    def update_piece_peer_list(self, piece_index, peer):
-        self.piece_info_dict[piece_index].append(peer)
-        print self.piece_info_dict
+    def add_peer_to_piece_list(self, piece_index, peer):
+        self.piece_peer_list[piece_index].append(peer)
+        self.rarity[piece_index] += 1
 
     def get_block(self, block_info):
         pass
