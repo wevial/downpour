@@ -61,7 +61,6 @@ class Peer:
         print 'whee, i got data!'
         (messages, buf_remainder) = M.Msg.get_messages_from_buffer(self.buf + data)
         print len(messages)
-        print messages[0].msg_name
         for msg in messages:
             if msg.msg_id == 5:
                 print 'bitfield', getattr(msg, 'buffer_to_send')
@@ -128,16 +127,17 @@ class Peer:
 
     #When receiving bitfield
     def setup_bitfield(self, bitfield_buf):
-        self.bitfield = BitArray(bytes=bitfield_buf) 
-        print self.bitfield
-        # self.client.update_pieces_count(self.peer_id, self.bitfield)
+        bitfield = BitArray(bytes=bitfield_buf) 
+        self.bitfield = bitfield
+        for i, bit in enumerate(bitfield):
+            if bit:
+                self.client.update_piece_peer_list(i, self)
 
     #When receiving have message
     def update_bitfield(self, piece_index):
-        if not self.bitfield[piece_index]:
+        if not self.bitfield[ piece_index ]:
             self.bitfield.invert(piece_index)
-            print self.bitfield
-            # self.client.increment_piece_count(piece_index, self.peer_id)
+            self.client.update_piece_peer_list(piece_index, self)
         else:
             raise PeerCommunicationError('Redundant "Have" message.')
 

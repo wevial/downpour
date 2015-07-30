@@ -14,6 +14,7 @@ class Client(object):
         self.torrent = torrent
         self.peer_id = '-TZ-0000-00000000000'
         self.peers = {}
+        self.piece_info_dict = {}
 
     def decode_torrent(self):
         f = open(self.torrent, 'r')
@@ -28,6 +29,11 @@ class Client(object):
         self.bitfield = BitArray(self.num_pieces)
         self.file_name = metainfo_data['name']
         self.left = metainfo_data['length']
+
+    def setup_piece_info_dict(self, num_pieces):
+        for i in range(num_pieces):
+            self.piece_info_dict[i] = []
+        
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -57,11 +63,8 @@ class Client(object):
     def select_request(self):
         pass
 
-    def update_pieces_count(self, peer_id, bitfield):
-        pass
-
-    def increment_piece_count(self, peer_id, piece_index):
-        pass
+    def update_piece_peer_list(self, peer, piece_index):
+        self.piece_info_dict[piece_index].append(peer)
 
     def get_block(self, block_info):
         pass
