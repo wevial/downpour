@@ -72,21 +72,17 @@ class Client(object):
     def select_request_random(self):
         pass
 
-    def update_piece_peer_list(self, piece_index, peer):
-        self.piece_info_peers[piece_index].append(peer)
-        self.pretty_print_piece_peer_list()
+    def add_peer_to_piece_piece_list(self, piece_index, peer):
+        self.pieces[piece_index].add_peer_to_peer_list(peer)
 
     def get_block(self, block_info):
         pass
 
-    def update_block_info(self, block_info):
-        pass
 
     def write_block_to_file(self, block_info, block):
         (piece_index, begin, block_length) = block_info
-
-
-        pass
+        piece = self.pieces[piece_index]
+        piece.write_block_to_file(begin, block)
 
     ##### HELPER FUNCTIONS #####
     def pretty_print_piece_peer_list(self):

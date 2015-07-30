@@ -133,13 +133,13 @@ class Peer:
         self.bitfield = bitfield
         for piece_index, bit in enumerate(bitfield):
             if bit:
-                self.client.update_piece_peer_list(piece_index, self)
+                self.client.add_peer_to_piece_peer_list(piece_index, self)
 
     #When receiving have message
     def update_bitfield(self, piece_index):
         if not self.bitfield[ piece_index ]:
             self.bitfield.invert(piece_index)
-            self.client.add_peer_to_piece_list(piece_index, self)
+            self.client.add_peer_to_piece_peer_list(piece_index, self)
         else:
             raise PeerCommunicationError('Redundant "Have" message.')
 
@@ -151,7 +151,6 @@ class Peer:
 
     #After block message
     def update_and_store_block(self, block_info, block):
-        self.client.update_block_info(block_info)
         self.client.write_block_to_file(block_info, block)
 
     # After cancel message

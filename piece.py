@@ -24,6 +24,7 @@ class Piece(object):
         pass
 
     def write_block_to_file(self, begin, block):
+        self.blocks_received += 1
         self.file_name.seek(begin)
         self.file_name.write(block)
 
