@@ -2,7 +2,7 @@ import time
 import socket
 import struct 
 from bitstring import BitArray
-import message as M
+from message import *
 
 class Peer:
     def __init__(self, ip, port, client):
@@ -23,6 +23,7 @@ class Peer:
     def __repr__(self):
         return str((self.ip, self.port))
 
+    ###### WRAPPER METHODS FOR SOCKET ######
     def connect(self):
         self.socket.connect((self.ip, self.port))
 
@@ -31,10 +32,11 @@ class Peer:
 
     def recv(self, num_bytes):
         return self.socket.recv(num_bytes)
+    ########################################
 
     # TODO: Set up message queue to maximize bytes per trip over the servers.
     def send_message(self, message):
-        bytes_to_send = M.Msg.get_buffer_from_message(message)
+        bytes_to_send = Msg.get_buffer_from_message(message)
         self.sendall(bytes_to_send) 
 
     def verify_handshake(self, handshake, info_hash):
@@ -45,7 +47,7 @@ class Peer:
 
     def verify_and_initiate_communication(self, handshake, info_hash):
         if self.verify_handshake(handshake, info_hash):
-            self.send_message(M.InterestedMsg())
+            self.send_message(InterestedMsg())
         else:
             raise ConfirmationError('peer handshake does not match info hash')
 
@@ -54,17 +56,17 @@ class Peer:
         print 'You have connected to your peer!'
         self.sendall(handshake)
         print 'Sending handshake to peer...'
-        peer_handshake = M.receive_data(self, amount_expected=68, block_size=68)
+        peer_handshake = receive_data(self, amount_expected=68, block_size=68)
         print 'Peer handshake has been received.'
         return peer_handshake
 
     def process_and_act_on_incoming_data(self, data):
         print 'whee, i got data!'
-        (messages, buf_remainder) = M.Msg.get_messages_from_buffer(self.buf + data)
+        (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
         print len(messages)
         for msg in messages:
             if msg.msg_id == 5:
-                print 'bitfield', repr( getattr(msg, 'buffer_to_send') )
+                print 'bitfield', repr(getattr(msg, 'buffer_to_send'))
             if msg.msg_id == 4:
                 print 'have', getattr(msg, 'piece_index')
         self.act_on_messages(messages)
@@ -108,20 +110,19 @@ class Peer:
         self.is_alive = time_elapsed < 120 # Timeout timer set at 2 mins
         return self.is_alive
 
-    #Upon message id 0-3
     def peer_starts_choking_client(self):
         self.peer_is_choing_client = True
 
     def peer_stops_choking_client(self):
         self.peer_is_choking_client = False
         if self.am_interested:
-            self.send_message(M.requestMsg(self.client.select_request()))
+            self.send_message(RequestMsg(self.client.select_request()))
 
     def peer_is_now_interested(self):
         self.peer_is_interested = True
         # Assuming we always unchoke when receiving interested message
         self.am_choking_peer = False
-        self.send_message(M.Msg(1))
+        self.send_message(Msg(1))
 
     def peer_is_no_longer_interested(self):
         self.peer_is_interested = False
@@ -130,9 +131,9 @@ class Peer:
     def setup_bitfield(self, bitfield_buf):
         bitfield = BitArray(bytes=bitfield_buf) 
         self.bitfield = bitfield
-        for i, bit in enumerate(bitfield):
+        for piece_index, bit in enumerate(bitfield):
             if bit:
-                self.client.add_peer_to_piece_list(i, self)
+                self.client.update_piece_peer_list(piece_index, self)
 
     #When receiving have message
     def update_bitfield(self, piece_index):
@@ -146,7 +147,7 @@ class Peer:
     def queue_up_block(self, block_info):
         assert not self.am_choking_peer
         block = self.client.get_block(block_info)
-        self.send_message(M.blockMsg(7, block_info = block_info, block = block))
+        self.send_message(BlockMsg(7, block_info = block_info, block = block))
 
     #After block message
     def update_and_store_block(self, block_info, block):

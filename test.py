@@ -1,15 +1,14 @@
-import client as C
-import peer as P
+from peer import Peer
 from reactor import Reactor
+import client as C
 
 # Set things up...
 print 'Setting up client and tracker...'
 c = C.Client(C.TEST_TORRENT)
-c.setup_client_and_tracker()
-
 print 'Client, tracker set up.'
+
 peers = c.peers
-tom = P.Peer('96.126.104.219', 54465, c)
+tom = Peer('96.126.104.219', 54465, c)
 for peer in peers.values():
     print peer
     if peer.ip == '96.126.104.219':
