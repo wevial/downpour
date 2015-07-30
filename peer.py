@@ -17,7 +17,6 @@ class Peer:
         self.time_of_last_msg = time.time()
         self.is_alive = False
         self.num_pieces = num_pieces
-        #Hardcoding length for testing, but this needs to change
         self.bitfield = BitArray(length=num_pieces)
         
     def __repr__(self):
