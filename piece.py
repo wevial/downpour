@@ -7,15 +7,21 @@ class Piece(object):
     #Piece length is uniform across torrent (except last piece)
     #Number of blocks is uniform across torrent (except last piece)
 
-    def __init__(self, index, length, info_hash):
+    def __init__(self, index, length, piece_hash):
         self.length = length
         self.index = index 
-        self.info_hash = info_hash
+        self.piece_hash = piece_hash
         self.rarity = 0
         self.peers = []
         self.blocks_requested = 0
         self.blocks_received = 0
         self.file_name = open(DIRNAME + self.index, 'wb') # TODO: IMPLEMENT DIR
+
+    def add_peer_to_peer_list(self, peer):
+        self.peers.append(peer)
+
+    def get_block_to_send(self, begin, length):
+        pass
 
     def write_block_to_file(self, begin, block):
         self.file_name.seek(begin)

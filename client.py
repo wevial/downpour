@@ -17,41 +17,32 @@ class Client(object):
         self.peers = {}
         self.setup_client_and_tracker()
 
-    def decode_torrent(self):
+    def decode_torrent_and_start_setup(self):
         f = open(self.torrent, 'r')
         metainfo = B.bdecode(f.read())
+        # Client
         metainfo_data = metainfo['info'] # Un-bencoded dictionary
+        self.info_hash = H.sha1(B.bencode(metainfo_data)).digest()
+        self.file_length = metainfo_data['length']
 
         #Tracker
         self.announce_url = metainfo['announce']
 
-        #Pieces?
+        #Pieces
         self.file_name = metainfo_data['name']
         self.setup_pieces(metainfo_data['piece length'],
                 wrap(metainfo_data['pieces'], 20))
 
-        self.left = metainfo_data['length']
-
-
-        self.info_hash = H.sha1(B.bencode(metainfo_data)).digest()
-        self.num_pieces = len(self.piece_hashes) # Total number of pieces
-        self.bitfield = BitArray(self.num_pieces)
-
     def setup_pieces(self, length, hash_list):
         pieces = []
-        last_piece_length = self.left - (self.num_pieces - 1) * length
+        self.num_pieces = len(hash_list)
+        self.bitfield = BitArray(self.num_pieces)
+        last_piece_length = self.file_length - (self.num_pieces - 1) * length
         for i in range(self.num_pieces):
             if i == num_pieces - 1:
                 length = last_piece_length
-            piece = Piece(i, length, hash_list[i]) 
-            
-
-        self.piece_length = metainfo_data['piece length']
-        self.piece_hashes = wrap(metainfo_data['pieces'], 20)
-
-    #DOUBLE CHECK NAMES
-    def setup_piece_info_peers(self):
-        self.piece_info_peers = [[] for _ in range(self.num_pieces)]
+            pieces.append(Piece(i, length, hash_list[i]))
+        self.pieces = pieces
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -66,12 +57,11 @@ class Client(object):
         self.handshake = handshake
     
     def setup_client_and_tracker(self):
-        self.decode_torrent()
+        self.decode_torrent_and_start_setup()
         self.tracker = Tracker(self)
         self.tracker.construct_tracker_url()
         self.tracker.send_request_and_parse_response()
         self.build_handshake()
-        self.setup_piece_info_peers()
 
     def add_peer(self, id_num, peer):
         self.peers[id_num] = peer
