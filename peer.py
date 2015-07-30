@@ -23,6 +23,7 @@ class Peer:
     def __repr__(self):
         return str((self.ip, self.port))
 
+    ###### WRAPPER METHODS FOR SOCKET ######
     def connect(self):
         self.socket.connect((self.ip, self.port))
 
@@ -31,6 +32,7 @@ class Peer:
 
     def recv(self, num_bytes):
         return self.socket.recv(num_bytes)
+    ########################################
 
     # TODO: Set up message queue to maximize bytes per trip over the servers.
     def send_message(self, message):
@@ -64,7 +66,7 @@ class Peer:
         print len(messages)
         for msg in messages:
             if msg.msg_id == 5:
-                print 'bitfield', repr( getattr(msg, 'buffer_to_send') )
+                print 'bitfield', repr(getattr(msg, 'buffer_to_send'))
             if msg.msg_id == 4:
                 print 'have', getattr(msg, 'piece_index')
         self.act_on_messages(messages)
@@ -108,7 +110,6 @@ class Peer:
         self.is_alive = time_elapsed < 120 # Timeout timer set at 2 mins
         return self.is_alive
 
-    #Upon message id 0-3
     def peer_starts_choking_client(self):
         self.peer_is_choing_client = True
 
@@ -130,9 +131,9 @@ class Peer:
     def setup_bitfield(self, bitfield_buf):
         bitfield = BitArray(bytes=bitfield_buf) 
         self.bitfield = bitfield
-        for i, bit in enumerate(bitfield):
+        for piece_index, bit in enumerate(bitfield):
             if bit:
-                self.client.update_piece_peer_list(i, self)
+                self.client.update_piece_peer_list(piece_index, self)
 
     #When receiving have message
     def update_bitfield(self, piece_index):

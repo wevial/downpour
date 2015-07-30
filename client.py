@@ -14,7 +14,6 @@ class Client(object):
         self.torrent = torrent
         self.peer_id = '-TZ-0000-00000000000'
         self.peers = {}
-        self.piece_info_dict = {}
         self.setup_client_and_tracker()
 
     def decode_torrent(self):
@@ -30,10 +29,8 @@ class Client(object):
         self.file_name = metainfo_data['name']
         self.left = metainfo_data['length']
 
-    def setup_piece_info_dict(self, num_pieces):
-        for i in range(num_pieces):
-            self.piece_info_dict[i] = []
-        
+    def setup_piece_info_peers(self):
+        self.piece_info_peers = [[] for _ in range(self.num_pieces)]
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -53,6 +50,7 @@ class Client(object):
         self.tracker.construct_tracker_url()
         self.tracker.send_request_and_parse_response()
         self.build_handshake()
+        self.setup_piece_info_peers()
 
     def add_peer(self, id_num, peer):
         self.peers[id_num] = peer
@@ -64,8 +62,8 @@ class Client(object):
         pass
 
     def update_piece_peer_list(self, piece_index, peer):
-        self.piece_info_dict[piece_index].append(peer)
-        print self.piece_info_dict
+        self.piece_info_peers[piece_index].append(peer)
+        self.pretty_print_piece_peer_list()
 
     def get_block(self, block_info):
         pass
@@ -75,3 +73,10 @@ class Client(object):
 
     def write_block_to_file(self, block_info, block):
         pass
+
+    ##### HELPER FUNCTIONS #####
+    def pretty_print_piece_peer_list(self):
+        s = ''
+        for i in self.piece_info_peers:
+            s += '1' if len(i) > 0 else '0'
+        print s
