@@ -15,13 +15,13 @@ class Client(object):
         self.peer_id = '-TZ-0000-00000000000'
         self.peers = {}
         self.piece_info_dict = {}
+        self.setup_client_and_tracker()
 
     def decode_torrent(self):
         f = open(self.torrent, 'r')
         metainfo = B.bdecode(f.read())
         self.announce_url = metainfo['announce']
         metainfo_data = metainfo['info'] # Un-bencoded dictionary
-#        print metainfo_data
         self.info_hash = H.sha1(B.bencode(metainfo_data)).digest()
         self.piece_length = metainfo_data['piece length']
         self.piece_hashes = wrap(metainfo_data['pieces'], 20)
@@ -63,8 +63,9 @@ class Client(object):
     def select_request(self):
         pass
 
-    def update_piece_peer_list(self, peer, piece_index):
+    def update_piece_peer_list(self, piece_index, peer):
         self.piece_info_dict[piece_index].append(peer)
+        print self.piece_info_dict
 
     def get_block(self, block_info):
         pass

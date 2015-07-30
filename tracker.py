@@ -53,7 +53,7 @@ class Tracker:
         return [(self.get_host_string(peer), self.get_port(peer)) for peer in byte_list]
 
     def construct_peers_for_client(self, peer_tuples):
-        peers = [Peer(ip, port, self.client.num_pieces) for ip, port in peer_tuples]
+        peers = [Peer(ip, port, self.client) for ip, port in peer_tuples]
         for i, peer in enumerate(peers):
             self.client.add_peer(i, peer)
 

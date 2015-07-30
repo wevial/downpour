@@ -16,10 +16,13 @@ class testSendMessage(unittest.TestCase):
         mypeer.sendmessage(Msg('choke'))
         self.assertEqual(localvar, '\x00\x00\x00\x01\x00')
 '''
+
+client = MagicMock(returnvalue = 'None')
+
 class TestBitfield(unittest.TestCase):
     def test_create_bitfield(self):
-        mypeer = Peer('127.0.0.1', 6881, 8)
-        mypeer.client = MagicMock(returnvalue='None')
+        client.num_pieces = 8
+        mypeer = Peer('127.0.0.1', 6881, client)
         mypeer.act_on_messages((BitfieldMsg('\x00'),))
         self.assertEqual(mypeer.bitfield[0], 0)
         mypeer.act_on_messages((BitfieldMsg('\xff'),))
@@ -29,29 +32,29 @@ class TestBitfield(unittest.TestCase):
 class TestBuffer(unittest.TestCase):
 
     def test_init(self):
-        mypeer = Peer('127.0.0.1', 6881, 8)
+        mypeer = Peer('127.0.0.1', 6881, client)
         mypeer.buf = ''
         self.assertEqual(mypeer.buf, '')
         
     def test_init_nonempty(self):
-        mypeer = Peer('127.0.0.1', 6881, 8)
+        mypeer = Peer('127.0.0.1', 6881, client)
         mypeer.buf = '\x00'
         self.assertEqual(mypeer.buf, '\x00')
 
     def test_convert_keep_alive(self):
-        mypeer = Peer('127.0.0.1', 6881, 8)
+        mypeer = Peer('127.0.0.1', 6881, client)
         mypeer.buf = ''
         mypeer.process_and_act_on_incoming_data('\x00\x00\x00\xff\x00')
         self.assertEqual(mypeer.buf, '\x00\x00\x00\xff\x00')
 
     def test_buffer_plus_message_keep_alive(self):
-        mypeer = Peer('127.0.0.1', 6881, 8)
+        mypeer = Peer('127.0.0.1', 6881, client)
         mypeer.buf = ''
         mypeer.process_and_act_on_incoming_data('\x00\x00\x00\x00\x00')
         self.assertEqual(mypeer.buf, '\x00')
 
     def test_buffer_plus_message_unchoke(self):
-        mypeer = Peer('127.0.0.1', 6881, 8)
+        mypeer = Peer('127.0.0.1', 6881, client)
         mypeer.buf = ''
         mypeer.process_and_act_on_incoming_data('\x00\x00\x00\x01\x01\xff')
         self.assertEqual(mypeer.buf, '\xff')

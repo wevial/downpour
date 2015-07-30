@@ -5,7 +5,7 @@ from bitstring import BitArray
 import message as M
 
 class Peer:
-    def __init__(self, ip, port, num_pieces):
+    def __init__(self, ip, port, client):
         self.ip = ip
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,8 +16,9 @@ class Peer:
         self.buf = '' # Data buffer
         self.time_of_last_msg = time.time()
         self.is_alive = False
-        self.num_pieces = num_pieces
-        self.bitfield = BitArray(length=num_pieces)
+        self.client = client
+        self.num_pieces = client.num_pieces
+        self.bitfield = BitArray(length=self.num_pieces)
         
     def __repr__(self):
         return str((self.ip, self.port))
