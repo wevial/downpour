@@ -2,7 +2,6 @@ import struct
 import bitstring
 import struct 
 
-
 class Msg(object):
     #These class variables are the default, but may be overriden by subclass
 

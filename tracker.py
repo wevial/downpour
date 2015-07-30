@@ -22,7 +22,7 @@ class Tracker:
 
     def construct_tracker_url(self):
         """ Construct the full URL for the torrent we're connecting to """ 
-        print self.params
+        #print self.params
         params = '&'.join('%s=%s' % (key, U.quote(self.params[key])) 
                 for key in self.params_order)
         tracker_url = self.client.announce_url + '?' +  params
@@ -30,8 +30,8 @@ class Tracker:
         return tracker_url
 
     def send_request_to_tracker_server(self):
-        """ Returns bencoded request """
-        print "Handshake sent"
+        """ Returns bencoded handshake request """
+        print "Request sent to tracker server."
         return requests.get(url=self.url)
 
     def peer_host_port_vals(self, peers):
@@ -61,7 +61,7 @@ class Tracker:
         response_text = B.bdecode(response.text)
         peer_ips = self.peers_to_ip_tuples(response_text['peers'])
         self.construct_peers_for_client(peer_ips)
-        print 'Response parsed'
+        print 'Tracker response parsed.'
         
     def send_request_and_parse_response(self):
         response = self.send_request_to_tracker_server()

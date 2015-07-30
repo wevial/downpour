@@ -1,6 +1,8 @@
 import select
 from message import Msg
+
 MSG_LENGTH = 4096
+
 # Event loop using select
 # Simplifying assumptions:
 # No cancellations
@@ -8,8 +10,8 @@ MSG_LENGTH = 4096
 # Not yet worrying about order implementation
 
 class Reactor:
-    # initialize with list of all peers
     def __init__(self, peer_list):
+        # initialize with list of all peers
         self.readers = {}
         self.sockets = []
         for peer in peer_list:
@@ -43,7 +45,7 @@ class Reactor:
                 if not new_data:
                     break
                 data += new_data
-                print 'MOAR DATA', len(new_data)
+                print 'Received data in the reactor. Data len:', len(new_data)
         if not data:
             raise IOError('Reactor.read_all passed an empty socket') 
         return data
