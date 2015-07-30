@@ -27,7 +27,6 @@ class Reactor:
         rlist, _, _ = select.select(self.sockets, [], [])
         for socket in rlist:
             data = self.read_all(socket)
-            print data
             self.readers[socket](data)
         
     @staticmethod

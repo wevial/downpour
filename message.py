@@ -23,7 +23,6 @@ class Msg(object):
             # Handshake is handled separately
             if len(buf) < 4:
                 break
-
             msg_len = struct.unpack('!I', buf[:4])[0]
             print 'message length', msg_len
             print 'buf len(reactor)', len(buf)
@@ -61,6 +60,7 @@ class Msg(object):
                 elif msg_id == 8:
                     block_info = struct.unpack('!III', buf[5:17])
                     messages.append( CancelMsg(block_info = block_info) )
+                print messages[-1]
             buf = buf[msg_len + 4:]
         return (messages, buf) # buf is remaining unprocessed bytes 
 
@@ -171,6 +171,7 @@ class CancelMsg(Msg):
         return 'Cancel'
 
 def receive_data(peer, amount_expected, block_size=4096):
+    assert amount_expected > 0
     try:
         data_received = ''
         amount_received = 0

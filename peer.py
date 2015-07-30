@@ -1,11 +1,11 @@
 import time
 import socket
+import struct 
 from bitstring import BitArray
 import message as M
-import struct 
 
 class Peer:
-    def __init__(self, ip, port):
+    def __init__(self, ip, port, num_pieces):
         self.ip = ip
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,8 +16,9 @@ class Peer:
         self.buf = '' # Data buffer
         self.time_of_last_msg = time.time()
         self.is_alive = False
+        self.num_pieces = num_pieces
         #Hardcoding length for testing, but this needs to change
-        self.bitfield = BitArray(length=20)
+        self.bitfield = BitArray(length=num_pieces)
         
     def __repr__(self):
         return str((self.ip, self.port))
@@ -42,7 +43,7 @@ class Peer:
         self.peer_id = peer_id
         return peer_hash == info_hash
 
-    def initiate_messages(self, handshake, info_hash):
+    def verify_and_initiate_communication(self, handshake, info_hash):
         if self.verify_handshake(handshake, info_hash):
             self.send_message(M.InterestedMsg())
         else:
@@ -60,6 +61,13 @@ class Peer:
     def process_and_act_on_incoming_data(self, data):
         print 'whee, i got data!'
         (messages, buf_remainder) = M.Msg.get_messages_from_buffer(self.buf + data)
+        print len(messages)
+        print messages[0].msg_name
+        for msg in messages:
+            if msg.msg_id == 5:
+                print 'bitfield', getattr(msg, 'buffer_to_send')
+            if msg.msg_id == 4:
+                print 'have', getattr(msg, 'piece_index')
         self.act_on_messages(messages)
         self.update_buffer(buf_remainder)
 
@@ -71,18 +79,18 @@ class Peer:
                 1: (self.peer_stops_choking_client, []),
                 2: (self.peer_is_now_interested, []),
                 3: (self.peer_is_no_longer_interested, []),
-                4: (self.update_bitfield, ['bitfield_buf']),
-                5: (self.setup_bitfield, ['piece_index']), 
+                4: (self.update_bitfield, ['piece_index']),
+                5: (self.setup_bitfield, ['buffer_to_send']), 
                 6: (self.queue_up_block, ['block_info']),
                 7: (self.update_and_store_block, ['block_info', 'block']),
                 8: (self.clear_requests, ['block_info']), 
                 }
                 
-        for message in messages:
+        for msg in messages:
             # Call message handler with arguments from message
-            (message_action, message_params) = message_actions[message.msg_id]
-            print message.msg_name
-            message_args = [getattr(message, param) for param in message_params] 
+            (message_action, message_params) = message_actions[msg.msg_id]
+            print msg.msg_name
+            message_args = [getattr(msg, param) for param in message_params] 
             message_action(*message_args)
 
     def update_buffer(self, buf):
@@ -122,13 +130,15 @@ class Peer:
     #When receiving bitfield
     def setup_bitfield(self, bitfield_buf):
         self.bitfield = BitArray(bytes=bitfield_buf) 
-        self.client.update_pieces_count(self.peer_id, self.bitfield)
+        print self.bitfield
+        # self.client.update_pieces_count(self.peer_id, self.bitfield)
 
     #When receiving have message
     def update_bitfield(self, piece_index):
         if not self.bitfield[piece_index]:
             self.bitfield.invert(piece_index)
-            self.client.increment_piece_count(piece_index, self.peer_id)
+            print self.bitfield
+            # self.client.increment_piece_count(piece_index, self.peer_id)
         else:
             raise PeerCommunicationError('Redundant "Have" message.')
 

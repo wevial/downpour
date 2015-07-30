@@ -5,7 +5,6 @@ from bitstring import BitArray
 from textwrap import wrap
 
 from tracker import Tracker
-from peer import Peer
 import message
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
@@ -26,10 +25,6 @@ class Client(object):
         self.piece_length = metainfo_data['piece length']
         self.piece_hashes = wrap(metainfo_data['pieces'], 20)
         self.num_pieces = len(self.piece_hashes)
-        print self.num_pieces
-
-#        Peer.num_pieces = len(self.piece_hashes) # What is this?
-
         self.file_name = metainfo_data['name']
         self.left = metainfo_data['length']
 
