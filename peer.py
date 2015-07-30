@@ -63,7 +63,7 @@ class Peer:
         print len(messages)
         for msg in messages:
             if msg.msg_id == 5:
-                print 'bitfield', getattr(msg, 'buffer_to_send')
+                print 'bitfield', repr( getattr(msg, 'buffer_to_send') )
             if msg.msg_id == 4:
                 print 'have', getattr(msg, 'piece_index')
         self.act_on_messages(messages)

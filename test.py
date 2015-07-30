@@ -21,12 +21,9 @@ print 'Sending handshake...'
 t_handshake = tom.send_and_receive_handshake(c.handshake)
 #handshake = c.send_and_receive_handshake(peers[0]) # Frank's
 #handshake = tom.verify_handshake(t_handshake, c.info_hash)
-if handshake:
-    print 'Handshake verified'
-    tom.verify_and_initiate_communication(t_handshake, c.info_hash)
-    # init reactor
-    c.reactor = Reactor([tom])
-    c.reactor.get_data()
-else:
-    print 'Wrong info_hash'
+print 'Handshake verified'
+tom.verify_and_initiate_communication(t_handshake, c.info_hash)
+# init reactor
+c.reactor = Reactor([tom])
+c.reactor.get_data()
 
