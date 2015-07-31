@@ -33,21 +33,16 @@ class Reactor:
 
     def read_write_live_sockets(self):
         rlist, wlist, _ = select.select(self.sockets, self.sockets, [])
-        print wlist
         for socket in rlist:
             data = self.read_all(socket)
             if data:
                 self.readers[socket](data)
         for sock in wlist:
             #TODO: Code below doesnt execute. Wlist is empty. 
-            try:
-                message = self.message_queues[socket]()
+            message = self.message_queues[socket]()
+            if message:
                 print 'sending message of type ', message
                 message_bytes = message.get_buffer_from_message()
-            #TODO: Fix this error handling block, generic Error does not exist
-            except Error as e:
-                print e 
-            else:
                 sock.sendall(message_bytes)
         
     @staticmethod
@@ -56,11 +51,13 @@ class Reactor:
         while True:
             try:
                 new_data = socket.recv(MSG_LENGTH)
+            except:
+                print 'some error'
             #TODO: Error handling - socket has no error attribute
-            except socket.error as e:
-                if e.args[0] == errno.EWOULDBLOCK:
-                    break
-                raise IOError('WTF SOCKET: Something went wrong with the socket')
+            # except socket.error as e:
+            #     if e.args[0] == errno.EWOULDBLOCK:
+            #         break
+            #     raise IOError('WTF SOCKET: Something went wrong with the socket')
             else:
                 if not new_data:
                     break

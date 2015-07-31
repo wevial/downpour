@@ -16,14 +16,14 @@ class Piece(object):
         self.rarity = 0
         self.peers = []
         self.num_blocks = self.length / BLOCK_LENGTH #Python 2 division!
-        print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
+        # print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
         self.blocks_requested = 0
         self.blocks_received = 0
         curpath = os.path.abspath(os.curdir)
         #TODO: Change file implementation for multi-file torrents
-        self.write_file = open(os.path.join(curpath, 'tdownload', 
-                        'flag', str(self.index)), 
-                        'wb+')
+        # self.write_file = open(os.path.join(curpath, 'tdownload', 
+                        # 'flag', str(self.index)), 
+                        # 'wb+')
 
     def __repr__(self):
         return str(self.index)

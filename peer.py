@@ -167,7 +167,10 @@ class Peer:
         self.msg_q.append(msg)
 
     def get_from_message_queue(self):
-        msg = self.msg_q.pop(0)
+        if len(self.msg_q):
+            msg = self.msg_q.pop(0)
+        else:
+            msg = None
         return msg
     
 
