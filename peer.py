@@ -19,6 +19,7 @@ class Peer:
         self.client = client
         self.num_pieces = client.num_pieces
         self.bitfield = BitArray(length=self.num_pieces)
+        self.msg_q = []
         
     def __repr__(self):
         return str((self.ip, self.port))
@@ -117,7 +118,7 @@ class Peer:
         self.peer_is_interested = True
         # Assuming we always unchoke when receiving interested message
         self.am_choking_peer = False
-        self.send_message(UnchokeMsg())
+        self.add_to_message_queue(UnchokeMsg())
 
     def peer_is_no_longer_interested(self):
         self.peer_is_interested = False
@@ -147,17 +148,28 @@ class Peer:
     def queue_up_block(self, block_info):
         assert not self.am_choking_peer
         block = self.client.get_block(block_info)
-        self.send_message(BlockMsg(7, block_info = block_info, block = block))
+        self.add_to_message_queue(BlockMsg(block_info = block_info, block = block))
 
     #After block message
     def update_and_store_block(self, block_info, block):
+        print 'got a block! yay!'
         self.client.write_block_to_file(block_info, block)
+
 
     # After cancel message
     # TODO
     def clear_requests(self, block_info):
         print 'clear them all'
-        
+
+    # MESSAGE QUEUE
+    def add_to_message_queue(self, msg):
+        print 'adding message ', msg, ' to queue'
+        self.msg_q.append(msg)
+
+    def get_from_message_queue(self):
+        msg = self.msg_q.pop(0)
+        return msg
+    
 
 
 

@@ -76,14 +76,18 @@ class Client(object):
             if not do_i_have:
                 #TODO fix formatting here, it's ugly
                 piece = self.pieces[piece_id]
-                while not piece.all_blocks_requested():
+                print 'getting piece', piece
+                #TODO: Make this loop work
+                while piece.not_all_blocks_requested():
+                    print 'getting block info'
                     block_i_want, peer = piece.get_next_block_and_peer_to_request()
                     block_message = message.RequestMsg(block_i_want)
-                    print 'sending message for block ', block_i_want
+                    print 'queueing up message for block ', block_i_want
                     if peer:
-                        peer.sendall(block_message.get_buffer_from_message())
+                        peer.add_to_message_queue(block_message)
                     else:
                         print 'why is there a piece with no peers?'
+                print 'requested all blocks, moving to next piece'
 
     def select_request_random(self):
         pass

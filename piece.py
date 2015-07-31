@@ -16,15 +16,20 @@ class Piece(object):
         self.rarity = 0
         self.peers = []
         self.num_blocks = self.length / BLOCK_LENGTH #Python 2 division!
+        print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
         self.blocks_requested = 0
         self.blocks_received = 0
         curpath = os.path.abspath(os.curdir)
-        self.file = open(os.path.join(curpath, 'tdownload', 
+        #TODO: Change file implementation for multi-file torrents
+        self.write_file = open(os.path.join(curpath, 'tdownload', 
                         'flag', str(self.index)), 
                         'wb+')
 
-    def all_blocks_requested(self):
-        self.blocks_requested == self.num_blocks
+    def __repr__(self):
+        return str(self.index)
+
+    def not_all_blocks_requested(self):
+        return self.blocks_requested < self.num_blocks
 
     def add_peer_to_peer_list(self, peer):
         print 'peer ', peer, ' has piece ', self.index
@@ -36,10 +41,11 @@ class Piece(object):
     def write_block_to_file(self, begin, block):
         self.blocks_received += 1
         #Add if / else for last block situation!
-        self.file_name.seek(begin)
-        self.file_name.write(block)
+        self.write_file.seek(begin)
+        self.write_file.write(block)
 
     def get_next_block_and_peer_to_request(self):
+        print 'getting block ', self.blocks_requested, ' of ', self.num_blocks
         begin = self.blocks_requested * BLOCK_LENGTH
         if self.blocks_requested == self.num_blocks - 1:
             length = self.length - self.blocks_requested * BLOCK_LENGTH
