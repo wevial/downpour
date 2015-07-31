@@ -61,15 +61,9 @@ class Peer:
         return peer_handshake
 
     def process_and_act_on_incoming_data(self, data):
-        print 'whee, i got data!'
         (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
-        print len(messages)
-        for msg in messages:
-            if msg.msg_id == 5:
-                print 'bitfield', repr(getattr(msg, 'buffer_to_send'))
-            if msg.msg_id == 4:
-                print 'have', getattr(msg, 'piece_index')
         self.act_on_messages(messages)
+        print 'updating buffer with leftover bytes'
         self.update_buffer(buf_remainder)
 
     def act_on_messages(self, messages):
@@ -90,7 +84,6 @@ class Peer:
         for msg in messages:
             # Call message handler with arguments from message
             (message_action, message_params) = message_actions[msg.msg_id]
-            print msg.msg_name
             message_args = [getattr(msg, param) for param in message_params] 
             message_action(*message_args)
 
@@ -115,20 +108,26 @@ class Peer:
 
     def peer_stops_choking_client(self):
         self.peer_is_choking_client = False
+        print 'unchoking self!'
         if self.am_interested:
-            self.send_message(RequestMsg(self.client.select_request()))
+            print 'requesting pieces now'
+            self.client.start_pieces_in_order_strategy()
 
     def peer_is_now_interested(self):
         self.peer_is_interested = True
         # Assuming we always unchoke when receiving interested message
         self.am_choking_peer = False
-        self.send_message(Msg(1))
+        self.send_message(UnchokeMsg())
 
     def peer_is_no_longer_interested(self):
         self.peer_is_interested = False
 
     #When receiving bitfield
     def setup_bitfield(self, bitfield_buf):
+        print 'setting up bitfield'
+        print 'updating interested status'
+        #TODO implement non-naive function for updating interested status
+        self.am_interested = True
         bitfield = BitArray(bytes=bitfield_buf) 
         self.bitfield = bitfield
         for piece_index, bit in enumerate(bitfield):
@@ -137,6 +136,7 @@ class Peer:
 
     #When receiving have message
     def update_bitfield(self, piece_index):
+        print 'updating bitfield'
         if not self.bitfield[ piece_index ]:
             self.bitfield.invert(piece_index)
             self.client.add_peer_to_piece_peer_list(piece_index, self)

@@ -5,6 +5,7 @@ from bitstring import BitArray
 from textwrap import wrap
 
 from tracker import Tracker
+from piece import Piece
 import message
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
@@ -39,7 +40,7 @@ class Client(object):
         self.bitfield = BitArray(self.num_pieces)
         last_piece_length = self.file_length - (self.num_pieces - 1) * length
         for i in range(self.num_pieces):
-            if i == num_pieces - 1:
+            if i == self.num_pieces - 1:
                 length = last_piece_length
             pieces.append(Piece(i, length, hash_list[i]))
         self.pieces = pieces
@@ -69,11 +70,30 @@ class Client(object):
     def update_timeout(self, peer_id):
         pass
 
+    #TODO implement real strategies :)
+    def start_pieces_in_order_strategy(self):
+        for piece_id, do_i_have in enumerate(self.bitfield):
+            if not do_i_have:
+                #TODO fix formatting here, it's ugly
+                piece = self.pieces[piece_id]
+                while not piece.all_blocks_requested():
+                    block_i_want, peer = piece.get_next_block_and_peer_to_request()
+                    block_message = message.RequestMsg(block_i_want)
+                    print 'sending message for block ', block_i_want
+                    if peer:
+                        peer.sendall(block_message.get_buffer_from_message())
+                    else:
+                        print 'why is there a piece with no peers?'
+
     def select_request_random(self):
         pass
 
-    def add_peer_to_piece_piece_list(self, piece_index, peer):
+    def add_peer_to_piece_peer_list(self, piece_index, peer):
+        print 'adding piece ', piece_index, 'to peer', peer
         self.pieces[piece_index].add_peer_to_peer_list(peer)
+
+    def get_next_block(self, piece_index):
+        self.pieces[piece_index].get_next_block_and_peer_to_request()
 
     def get_block(self, block_info):
         pass
@@ -81,6 +101,7 @@ class Client(object):
 
     def write_block_to_file(self, block_info, block):
         (piece_index, begin, block_length) = block_info
+        print 'got block from piece ', piece_index
         piece = self.pieces[piece_index]
         piece.write_block_to_file(begin, block)
 

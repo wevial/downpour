@@ -29,7 +29,8 @@ class Reactor:
         rlist, _, _ = select.select(self.sockets, [], [])
         for socket in rlist:
             data = self.read_all(socket)
-            self.readers[socket](data)
+            if data:
+                self.readers[socket](data)
         
     @staticmethod
     def read_all(socket):
@@ -46,8 +47,8 @@ class Reactor:
                     break
                 data += new_data
                 print 'Received data in the reactor. Data len:', len(new_data)
-        if not data:
-            raise IOError('Reactor.read_all passed an empty socket') 
+        # if not data:
+            # raise IOError('Reactor.read_all passed an empty socket') 
         return data
     
 

@@ -16,7 +16,7 @@ class Tracker:
             'downloaded': '0',
             'peer_id': client.peer_id,
             'port': '6881', 
-            'left': str(client.left),
+            'left': str(client.file_length),
         }
 #        self.url = self.construct_url(client.announce_url)
 
