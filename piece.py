@@ -44,6 +44,7 @@ class Piece(object):
         self.write_file.seek(begin)
         self.write_file.write(block)
 
+    #Exposed method
     def get_next_block_and_peer_to_request(self):
         print 'getting block ', self.blocks_requested, ' of ', self.num_blocks
         begin = self.blocks_requested * BLOCK_LENGTH

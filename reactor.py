@@ -9,6 +9,8 @@ MSG_LENGTH = 4096
 # Only concerned about peers received at beginning
 # Not yet worrying about order implementation
 
+    
+
 class Reactor:
     def __init__(self, peer_list):
         # initialize with list of all peers

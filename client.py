@@ -18,6 +18,18 @@ class Client(object):
         self.peers = {}
         self.setup_client_and_tracker()
 
+    def process_raw_hash_list(self, hash_list, size):
+        tmp = ''
+        piece_hashes = []
+        for char in hash_list:
+            if len(tmp) < size:
+                tmp = tmp + char
+            else: 
+                piece_hashes.append(tmp)
+                tmp = char
+        piece_hashes.append(tmp)
+        return piece_hashes
+
     def decode_torrent_and_start_setup(self):
         f = open(self.torrent, 'r')
         metainfo = B.bdecode(f.read())
@@ -32,11 +44,15 @@ class Client(object):
         #Pieces
         self.file_name = metainfo_data['name']
         self.setup_pieces(metainfo_data['piece length'],
-                wrap(metainfo_data['pieces'], 20))
+                self.process_raw_hash_list(metainfo_data['pieces'], 20))
 
     def setup_pieces(self, length, hash_list):
+        print 'setting up pieces for file length, ', length
         pieces = []
         self.num_pieces = len(hash_list)
+        # assert self.num_pieces == self.raw_hashes / 20 # Raw hashes is always multiple of 20
+        print hash_list
+        print 'dividing up file into ', self.num_pieces, 'pieces'
         self.bitfield = BitArray(self.num_pieces)
         last_piece_length = self.file_length - (self.num_pieces - 1) * length
         for i in range(self.num_pieces):

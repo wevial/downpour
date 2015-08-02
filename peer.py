@@ -48,7 +48,7 @@ class Peer:
 
     def verify_and_initiate_communication(self, handshake, info_hash):
         if self.verify_handshake(handshake, info_hash):
-            self.send_message(InterestedMsg())
+            self.add_to_message_queue(InterestedMsg())
         else:
             raise ConfirmationError('peer handshake does not match info hash')
 
