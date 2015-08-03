@@ -19,11 +19,11 @@ class Piece(object):
         # print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
         self.blocks_requested = 0
         self.blocks_received = 0
-        self.make_temp_file()
+        self.make_write_file()
 
         #TODO: Separate out temp file creation from file writing
 
-    def make_temp_file(self):
+    def make_write_file(self):
         curpath = os.path.abspath(os.curdir)
         file_path = os.path.join(curpath, 'tdownload',
                         'flag', str(self.index))
