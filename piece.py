@@ -7,6 +7,7 @@ from mock import MagicMock
 class Piece(object):
     #Piece length is uniform across torrent (except last piece)
     #Number of blocks is uniform across torrent (except last piece)
+    #TODO: Change file implementation so that piece initialization passes file info?
 
     def __init__(self, index, length, piece_hash):
         self.length = length
@@ -19,10 +20,10 @@ class Piece(object):
         self.blocks_requested = 0
         self.blocks_received = 0
         curpath = os.path.abspath(os.curdir)
-        #TODO: Change file implementation for multi-file torrents, maybe a file writing abstraction?
+        #TODO: Separate out temp file creation from file writing
         self.write_file = open(os.path.join(curpath, 'tdownload', 
                         'flag', str(self.index)), 
-                        'wb+')
+                        'r+b')
 
     def __repr__(self):
         return str(self.index)
@@ -37,6 +38,7 @@ class Piece(object):
     def write_block_to_file(self, begin, block):
         self.blocks_received += 1
         #Add if / else for last block situation!
+        print 'Writing to piece ', self.index, ' at position ', begin
         self.write_file.seek(begin)
         self.write_file.write(block)
 
@@ -53,5 +55,6 @@ class Piece(object):
         if len(self.peers):
             peer = random.choice(self.peers)
         else:
+            #TODO: Setup some sort of error here?
             peer = None
         return (block_info, peer) 
