@@ -3,7 +3,7 @@ import bencode as B
 import struct
 import logging
 import message
-import os
+import os, sys
 from bitstring import BitArray
 from tracker import Tracker
 from piece import Piece
@@ -48,6 +48,7 @@ class Client(object):
         # Pieces
         self.file_name = data['name']
         self.setup_download_directory()
+        self.check_if_dload_file_exists()
         self.setup_pieces(data['piece length'],
                           self.process_raw_hash_list(data['pieces'], 20))
 
@@ -76,7 +77,14 @@ class Client(object):
             os.makedirs(self.dload_dir)
         except OSError:
             if not os.path.isdir(self.dload_dir):
-                raise 
+                raise SystemExit('Cannot create directory to download torrent files into. Please check if a file named ' + dir_name + ' exists') 
+#                raise OSError('Cannot create directory to download torrent files to.')
+
+    def check_if_dload_file_exists(self):
+        file_path = os.path.join(self.dload_dir, self.file_name)
+        if os.path.exists(file_path):
+            raise SystemExit('The file you are trying to download already exists.')
+            # Do something to cancel the rest of the setup
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
