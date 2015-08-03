@@ -1,15 +1,15 @@
 import hashlib as H
 import bencode as B
 import struct
-from bitstring import BitArray
 import logging
-
-logging.basicConfig(filename='example.log', filemode='w', level=logging.INFO)
-
+import message
+import os
+from bitstring import BitArray
 from tracker import Tracker
 from piece import Piece
-import message
 from stitcher import Stitcher
+
+logging.basicConfig(filename='example.log', filemode='w', level=logging.INFO)
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
 BLOCK_LENGTH = 2 ** 14
@@ -23,15 +23,15 @@ class Client(object):
         self.setup_client_and_tracker()
 
     def process_raw_hash_list(self, hash_list, size):
-        tmp = ''
+        tmp_hash = ''
         piece_hashes = []
         for char in hash_list:
-            if len(tmp) < size:
-                tmp = tmp + char
+            if len(tmp_hash) < size:
+                tmp_hash = tmp_hash + char
             else:
-                piece_hashes.append(tmp)
-                tmp = char
-        piece_hashes.append(tmp)
+                piece_hashes.append(tmp_hash)
+                tmp_hash = char
+        piece_hashes.append(tmp_hash)
         return piece_hashes
 
     def decode_torrent_and_start_setup(self):
@@ -47,6 +47,7 @@ class Client(object):
 
         # Pieces
         self.file_name = data['name']
+        self.setup_download_directory()
         self.setup_pieces(data['piece length'],
                           self.process_raw_hash_list(data['pieces'], 20))
 
@@ -63,9 +64,19 @@ class Client(object):
             if i == self.num_pieces - 1:
                 logging.info('Setting up last piece, length: %s', last_piece_length)
                 length = last_piece_length
-            pieces.append(Piece(i, length, hash_list[i]))
+            pieces.append(Piece(i, length, hash_list[i], self.dload_dir))
         self.pieces = pieces
 
+    def setup_download_directory(self):
+        dir_name = self.torrent
+        if dir_name.endswith('.torrent'):
+            dir_name = dir_name[:-8]
+        self.dload_dir = os.path.join(os.path.abspath(os.curdir), dir_name)
+        try:
+            os.makedirs(self.dload_dir)
+        except OSError:
+            if not os.path.isdir(self.dload_dir):
+                raise 
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -121,18 +132,14 @@ class Client(object):
 
     def write_block_to_file(self, block_info, block):
         (piece_index, begin, block_length) = block_info
-        logging.info('got block from piece %s', piece_index)
+        logging.info('Got block to write from piece %s', piece_index)
         piece = self.pieces[piece_index]
         piece.write_block_to_file(begin, block)
         if piece_index == self.num_pieces - 1:
-            logging.info('Wrote all pieces, stitching them together')
-            stitcher = Stitcher(self.file_name, self.num_pieces)
-            stitcher.stitch_files()
-            logging.info('stitching complete')
+            self.stitch_files()
 
-    # HELPER FUNCTIONS
-    def pretty_print_piece_peer_list(self):
-        s = ''
-        for i in self.piece_info_peers:
-            s += '1' if len(i) > 0 else '0'
-        print s
+    def stitch_files(self):
+        logging.info('Wrote all pieces, stitching them together')
+        stitcher = Stitcher(self.file_name, self.num_pieces, self.dload_dir)
+        stitcher.stitch_tmp_files()
+        logging.info('Stitching completed.')
