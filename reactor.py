@@ -53,7 +53,8 @@ class Reactor:
         while True:
             try:
                 new_data = socket.recv(MSG_LENGTH)
-            except:
+            exception socket.error:
+                raise IOError('WTF SOCKET: Something went wrong with the socket in the reactor')
                 print 'some error'
             #TODO: Error handling - socket has no error attribute
             # except socket.error as e:
