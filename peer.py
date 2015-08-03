@@ -3,6 +3,7 @@ import socket
 import struct 
 from bitstring import BitArray
 from message import *
+import Queue
 
 class Peer:
     def __init__(self, ip, port, client):
@@ -19,7 +20,7 @@ class Peer:
         self.client = client
         self.num_pieces = client.num_pieces
         self.bitfield = BitArray(length=self.num_pieces)
-        self.msg_q = []
+        self.msg_queue = Queue.Queue()
         
     def __repr__(self):
         return str((self.ip, self.port))
@@ -78,7 +79,7 @@ class Peer:
                 4: (self.update_bitfield, ['piece_index']),
                 5: (self.setup_bitfield, ['buffer_to_send']), 
                 6: (self.queue_up_block, ['block_info']),
-                7: (self.update_and_store_block, ['block_info', 'block']),
+                7: (self.update_and_store_block, ['block_info', 'buffer_to_send']),
                 8: (self.clear_requests, ['block_info']), 
                 }
                 
@@ -152,7 +153,6 @@ class Peer:
 
     #After block message
     def update_and_store_block(self, block_info, block):
-        print 'got a block! yay!'
         self.client.write_block_to_file(block_info, block)
 
 
@@ -164,14 +164,13 @@ class Peer:
     # MESSAGE QUEUE
     def add_to_message_queue(self, msg):
         print 'adding message ', msg, ' to queue'
-        self.msg_q.append(msg)
+        self.msg_queue.put(msg)
 
     def get_from_message_queue(self):
-        if len(self.msg_q):
-            msg = self.msg_q.pop(0)
+        if self.msg_queue.empty():
+            raise Queue.Empty
         else:
-            msg = None
-        return msg
+            return self.msg_queue.get_nowait()
     
 
 

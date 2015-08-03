@@ -1,5 +1,6 @@
 import select
 from message import Msg
+import Queue
 
 MSG_LENGTH = 4096
 
@@ -12,18 +13,18 @@ MSG_LENGTH = 4096
     
 
 class Reactor:
-    def __init__(self, peer_list):
-        # initialize with list of all peers
+    def __init__(self):
+        #Initialize with empty list
         self.readers = {}
         self.message_queues = {}
         self.sockets = []
-        for peer in peer_list:
-            self.register_reader(peer.socket, peer.process_and_act_on_incoming_data)
-        for peer in peer_list:
-            self.register_message_queue(peer.socket, peer.get_from_message_queue)
+
+    def add_peer_socket(self, peer):
+        self.sockets.append(peer.socket)
+        self.register_reader(peer.socket, peer.process_and_act_on_incoming_data)
+        self.register_message_queue(peer.socket, peer.get_from_message_queue)
 
     def register_reader(self, socket, callback):
-        self.sockets.append(socket)
         self.readers[socket] = callback
     
     def register_message_queue(self, socket, message_queue):
@@ -40,33 +41,26 @@ class Reactor:
             if data:
                 self.readers[socket](data)
         for sock in wlist:
-            #TODO: Code below doesnt execute. Wlist is empty. 
-            message = self.message_queues[socket]()
-            if message:
-                print 'sending message of type ', message
+            try:
+                message = self.message_queues[sock]()
                 message_bytes = message.get_buffer_from_message()
                 sock.sendall(message_bytes)
-        
+            except Queue.Empty:
+                pass
+            
+
     @staticmethod
     def read_all(socket):
         data = ''
-        while True:
-            try:
-                new_data = socket.recv(MSG_LENGTH)
-            except:
-                print 'some error'
-            #TODO: Error handling - socket has no error attribute
-            # except socket.error as e:
-            #     if e.args[0] == errno.EWOULDBLOCK:
-            #         break
-            #     raise IOError('WTF SOCKET: Something went wrong with the socket')
+        try:
+            new_data = socket.recv(MSG_LENGTH)
+            if not new_data:
+                pass
             else:
-                if not new_data:
-                    break
                 data += new_data
                 print 'Received data in the reactor. Data len:', len(new_data)
-        # if not data:
-            # raise IOError('Reactor.read_all passed an empty socket') 
+        except IOError as e:
+            print 'some error'
         return data
     
 

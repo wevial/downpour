@@ -23,6 +23,7 @@ t_handshake = tom.send_and_receive_handshake(c.handshake)
 print 'Handshake verified'
 tom.verify_and_initiate_communication(t_handshake, c.info_hash)
 # init reactor
-c.reactor = Reactor([tom])
+c.reactor = Reactor()
+c.reactor.add_peer_socket(tom)
 c.reactor.get_data()
 

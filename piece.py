@@ -3,7 +3,6 @@ import random
 import os
 from mock import MagicMock
 
-DIRNAME = '/tdownload/flag/'
 
 class Piece(object):
     #Piece length is uniform across torrent (except last piece)
@@ -20,10 +19,10 @@ class Piece(object):
         self.blocks_requested = 0
         self.blocks_received = 0
         curpath = os.path.abspath(os.curdir)
-        #TODO: Change file implementation for multi-file torrents
-        # self.write_file = open(os.path.join(curpath, 'tdownload', 
-                        # 'flag', str(self.index)), 
-                        # 'wb+')
+        #TODO: Change file implementation for multi-file torrents, maybe a file writing abstraction?
+        self.write_file = open(os.path.join(curpath, 'tdownload', 
+                        'flag', str(self.index)), 
+                        'wb+')
 
     def __repr__(self):
         return str(self.index)
@@ -34,9 +33,6 @@ class Piece(object):
     def add_peer_to_peer_list(self, peer):
         print 'peer ', peer, ' has piece ', self.index
         self.peers.append(peer)
-        
-    def get_block_to_send(self, begin, length):
-        pass
 
     def write_block_to_file(self, begin, block):
         self.blocks_received += 1
