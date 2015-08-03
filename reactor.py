@@ -1,5 +1,5 @@
 import select
-from message import Msg
+import logging
 import Queue
 
 MSG_LENGTH = 4096
@@ -10,11 +10,10 @@ MSG_LENGTH = 4096
 # Only concerned about peers received at beginning
 # Not yet worrying about order implementation
 
-    
 
 class Reactor:
     def __init__(self):
-        #Initialize with empty list
+        # Initialize with empty list
         self.readers = {}
         self.message_queues = {}
         self.sockets = []
@@ -26,7 +25,7 @@ class Reactor:
 
     def register_reader(self, socket, callback):
         self.readers[socket] = callback
-    
+
     def register_message_queue(self, socket, message_queue):
         self.message_queues[socket] = message_queue
 
@@ -35,19 +34,23 @@ class Reactor:
             self.read_write_live_sockets()
 
     def read_write_live_sockets(self):
-        rlist, wlist, _ = select.select(self.sockets, self.sockets, [])
-        for socket in rlist:
-            data = self.read_all(socket)
+        socks = self.sockets
+        rlist, wlist, _ = select.select(socks, socks, socks)
+        logging.info('Scanning for readable sockets')
+        for sock in rlist:
+            data = self.read_all(sock)
             if data:
-                self.readers[socket](data)
+                self.readers[sock](data)
+            else:
+                logging.info('Nothing coming in')
+        logging.info('Scanning for writable sockets')
         for sock in wlist:
             try:
                 message = self.message_queues[sock]()
                 message_bytes = message.get_buffer_from_message()
                 sock.sendall(message_bytes)
             except Queue.Empty:
-                pass
-            
+                logging.info('No messages in queue')
 
     @staticmethod
     def read_all(socket):
@@ -55,12 +58,11 @@ class Reactor:
         try:
             new_data = socket.recv(MSG_LENGTH)
             if not new_data:
+                logging.info('Theres no new data')
                 pass
             else:
                 data += new_data
                 print 'Received data in the reactor. Data len:', len(new_data)
         except IOError as e:
-            print 'some error'
+            logging.warning('Error', e)
         return data
-    
-

@@ -1,7 +1,6 @@
 BLOCK_LENGTH = 2 ** 14
 import random
 import os
-from mock import MagicMock
 
 
 class Piece(object):
@@ -11,7 +10,7 @@ class Piece(object):
 
     def __init__(self, index, length, piece_hash):
         self.length = length
-        self.index = index 
+        self.index = index
         self.piece_hash = piece_hash
         self.rarity = 0
         self.peers = []
@@ -21,8 +20,8 @@ class Piece(object):
         self.blocks_received = 0
         curpath = os.path.abspath(os.curdir)
         #TODO: Separate out temp file creation from file writing
-        self.write_file = open(os.path.join(curpath, 'tdownload', 
-                        'flag', str(self.index)), 
+        self.write_file = open(os.path.join(curpath, 'tdownload',
+                        'flag', str(self.index)),
                         'r+b')
 
     def __repr__(self):
@@ -57,4 +56,4 @@ class Piece(object):
         else:
             #TODO: Setup some sort of error here?
             peer = None
-        return (block_info, peer) 
+        return (block_info, peer)
