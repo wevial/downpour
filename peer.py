@@ -56,7 +56,7 @@ class Peer:
 
     def send_and_receive_handshake(self, handshake):
         self.connect()
-        logging.info('You have connected to peer ', self)
+        logging.info('You have connected to peer %s', self)
         self.sendall(handshake)
         peer_handshake = receive_data(self, amount_expected=68, block_size=68)
         return peer_handshake
@@ -156,7 +156,7 @@ class Peer:
 
     # MESSAGE QUEUE
     def add_to_message_queue(self, msg):
-        logging.info('adding message ', msg, ' to queue')
+        logging.info('adding message %s to queue.', msg)
         self.msg_queue.put(msg)
 
     def get_from_message_queue(self):

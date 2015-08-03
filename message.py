@@ -146,7 +146,7 @@ class RequestMsg(Msg):
         self.info_to_pack = (self.pack_prefix, self.msg_len, msg_id) + block_info
 
     def __repr__(self):
-        return 'Request'
+        return 'Request for piece ' + str(self.block_info[0]) + ' length ' + str(self.block_info[2])
 
 
 class BlockMsg(Msg):

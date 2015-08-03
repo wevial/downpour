@@ -4,9 +4,12 @@ import struct
 from bitstring import BitArray
 import logging
 
+logging.basicConfig(filename='example.log', filemode='w', level=logging.INFO)
+
 from tracker import Tracker
 from piece import Piece
 import message
+from stitcher import Stitcher
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
 BLOCK_LENGTH = 2 ** 14
@@ -18,7 +21,6 @@ class Client(object):
         self.peer_id = '-TZ-0000-00000000000'
         self.peers = {}
         self.setup_client_and_tracker()
-        logging.basicConfig(level=logging.DEBUG)
 
     def process_raw_hash_list(self, hash_list, size):
         tmp = ''
@@ -49,19 +51,21 @@ class Client(object):
                           self.process_raw_hash_list(data['pieces'], 20))
 
     def setup_pieces(self, length, hash_list):
-        logging.info('setting up pieces for file length, ', length)
+        logging.info('setting up pieces for file length, %s',  length)
         pieces = []
         self.num_pieces = len(hash_list)
         # assert self.num_pieces == self.raw_hashes / 20
         # Raw hashes is always multiple of 20
-        logging.info('dividing up file into ', self.num_pieces, 'pieces')
+        logging.info('dividing up file into %s pieces', self.num_pieces)
         self.bitfield = BitArray(self.num_pieces)
         last_piece_length = self.file_length - (self.num_pieces - 1) * length
         for i in range(self.num_pieces):
             if i == self.num_pieces - 1:
+                logging.info('Setting up last piece, length: %s', last_piece_length)
                 length = last_piece_length
             pieces.append(Piece(i, length, hash_list[i]))
         self.pieces = pieces
+
 
     def build_handshake(self):
         pstr = 'BitTorrent protocol'
@@ -94,12 +98,12 @@ class Client(object):
             if not do_i_have:
                 # TODO fix formatting here, it's ugly
                 piece = self.pieces[piece_id]
-                logging.info('getting piece', piece)
+                logging.info('getting piece %s', piece)
                 # TODO: Make this loop work
                 while piece.not_all_blocks_requested():
                     block_i_want, peer = piece.get_next_block_and_peer_to_request()
                     block_message = message.RequestMsg(block_i_want)
-                    logging.info('queueing up message for block ', block_i_want)
+                    logging.info('queueing up message for block %s', block_i_want)
                     if peer:
                         peer.add_to_message_queue(block_message)
                     else:
@@ -117,9 +121,14 @@ class Client(object):
 
     def write_block_to_file(self, block_info, block):
         (piece_index, begin, block_length) = block_info
-        logging.info('got block from piece ', piece_index)
+        logging.info('got block from piece %s', piece_index)
         piece = self.pieces[piece_index]
         piece.write_block_to_file(begin, block)
+        if piece_index == self.num_pieces - 1:
+            logging.info('Wrote all pieces, stitching them together')
+            stitcher = Stitcher(self.file_name, self.num_pieces)
+            stitcher.stitch_files()
+            logging.info('stitching complete')
 
     # HELPER FUNCTIONS
     def pretty_print_piece_peer_list(self):

@@ -1,6 +1,7 @@
 BLOCK_LENGTH = 2 ** 14
 import random
 import os
+import logging
 
 
 class Piece(object):
@@ -18,17 +19,22 @@ class Piece(object):
         # print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
         self.blocks_requested = 0
         self.blocks_received = 0
-        curpath = os.path.abspath(os.curdir)
+        self.make_temp_file()
+
         #TODO: Separate out temp file creation from file writing
-        self.write_file = open(os.path.join(curpath, 'tdownload',
-                        'flag', str(self.index)),
-                        'r+b')
+
+    def make_temp_file(self):
+        curpath = os.path.abspath(os.curdir)
+        file_path = os.path.join(curpath, 'tdownload',
+                        'flag', str(self.index))
+        open(file_path, 'wa').close() # Create file if it does not exist
+        self.write_file = open(file_path, 'r+b')
 
     def __repr__(self):
         return str(self.index)
 
     def not_all_blocks_requested(self):
-        return self.blocks_requested < self.num_blocks
+        return self.blocks_requested <= self.num_blocks
 
     def add_peer_to_peer_list(self, peer):
         print 'peer ', peer, ' has piece ', self.index
@@ -43,10 +49,11 @@ class Piece(object):
 
     #Exposed method
     def get_next_block_and_peer_to_request(self):
-        print 'getting block ', self.blocks_requested, ' of ', self.num_blocks
+        print 'Getting block ', self.blocks_requested, ' of ', self.num_blocks
         begin = self.blocks_requested * BLOCK_LENGTH
-        if self.blocks_requested == self.num_blocks - 1:
+        if self.blocks_requested == self.num_blocks:
             length = self.length - self.blocks_requested * BLOCK_LENGTH
+            logging.info('Calculating length of last block: %s', length)
         else:
             length = BLOCK_LENGTH # This is another repetitive assignment
         self.blocks_requested += 1

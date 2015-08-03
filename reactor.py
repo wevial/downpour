@@ -35,22 +35,27 @@ class Reactor:
 
     def read_write_live_sockets(self):
         socks = self.sockets
+        #TODO: only look for socks to write to if there are messages in queue
+
         rlist, wlist, _ = select.select(socks, socks, socks)
-        logging.info('Scanning for readable sockets')
         for sock in rlist:
             data = self.read_all(sock)
             if data:
                 self.readers[sock](data)
             else:
-                logging.info('Nothing coming in')
-        logging.info('Scanning for writable sockets')
+                # TODO: Destroy peer
+                socks.remove(sock)
+                del self.readers[sock]
+                del self.message_queues[sock]
         for sock in wlist:
             try:
                 message = self.message_queues[sock]()
+                logging.info('Sending message %s', message)
                 message_bytes = message.get_buffer_from_message()
                 sock.sendall(message_bytes)
             except Queue.Empty:
-                logging.info('No messages in queue')
+                # logging.info('No messages in queue')
+                pass
 
     @staticmethod
     def read_all(socket):
@@ -58,11 +63,11 @@ class Reactor:
         try:
             new_data = socket.recv(MSG_LENGTH)
             if not new_data:
-                logging.info('Theres no new data')
+                logging.debug('Theres no new data')
                 pass
             else:
                 data += new_data
-                print 'Received data in the reactor. Data len:', len(new_data)
+                logging.debug('Received data in the reactor. Data len: %s', len(new_data))
         except IOError as e:
-            logging.warning('Error', e)
+            logging.warning('Error %s', e)
         return data
