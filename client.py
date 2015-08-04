@@ -143,7 +143,7 @@ class Client(object):
         except OSError:
             if not os.path.isdir(self.dload_dir):
                 raise SystemExit('Cannot create directory to download torrent files into. Please check if a file named ' + dir_name + ' exists') 
-#                raise OSError('Cannot create directory to download torrent files to.')
+                # raise OSError('Cannot create directory to download torrent files to.')
 
     def check_if_dload_file_exists(self):
         file_path = os.path.join(self.dload_dir, self.file_name)
@@ -151,6 +151,11 @@ class Client(object):
             raise SystemExit('This file has already been downloaded.')
             # Do something to cancel the rest of the setup
 
+    def add_piece_to_bitfield(self, index):
+        if not self.bitfield[index]:
+            self.bitfield.invert(index)
+        else:
+            logging.warning('Should never get save same piece more than once!')
 
     # TODO implement real strategies :)
     def start_pieces_in_order_strategy(self):
@@ -179,14 +184,15 @@ class Client(object):
         (piece_index, begin, block_length) = block_info
         logging.info('Got block to write from piece %s', piece_index)
         piece = self.pieces[piece_index]
-        piece.write_block_to_file(begin, block)
+        piece.add_block(begin, block)
         self.tracker.update_download_stats(block_length)
         if piece_index == self.num_pieces - 1:
+            # THIS ONLY WORKS FOR NAIVE IN-ORDER IMPLEMENTATION
             self.finalize_download()
     
     def finalize_download(self):
         logging.info('Finalizing download')
-#        assert self.tracker.is_download_complete()
+        # assert self.tracker.is_download_complete()
         self.stitch_files()
         # Graceful shutdown 
         logging.info('Shutting down connection with peers')
@@ -201,10 +207,3 @@ class Client(object):
         stitcher = Stitcher(self.file_name, self.num_pieces, self.dload_dir)
         stitcher.stitch_tmp_files()
         logging.info('Stitching completed.')
-
-    def update_timeout(self, peer_id):
-        pass
-
-    def select_request_random(self):
-        pass
-

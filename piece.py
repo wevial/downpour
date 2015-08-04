@@ -1,8 +1,10 @@
+import hashlib as H
 import random
 import os
 import logging
 
 BLOCK_LENGTH = 2 ** 14
+
 
 class Piece(object):
     #Piece length is uniform across torrent (except last piece)
@@ -38,14 +40,45 @@ class Piece(object):
         print 'peer ', peer, ' has piece ', self.index
         self.peers.append(peer)
 
-    def write_block_to_file(self, begin, block):
+    def check_info_hash(self):
+        self.write_file.seek(0)
+        file_bytes = self.write_file.read()
+        computed_hash = hashlib.sha1(file_bytes).digest()
+        return computed_hash == self.piece_hash
+
+    def save_or_delete(self):
+        if self.check_info_hash():
+            logging.debug('Awesome, info hash is correct')
+            # self.client.add_piece_to_bitfield(self.index)
+        else:
+            logging.warning('Incorrect info hash for piece %s', self.index)
+            self.reset()
+
+    def reset(self):
+        self.blocks_received = 0
+        self.blocks_requested = 0
+        self.make_write_file(True)
+        # TODO: UPDATE CLIENT
+
+    def check_if_finished(self):
+        return self.blocks_received == self.num_blocks
+
+    def update_block_count(self):
         self.blocks_received += 1
-        #Add if / else for last block situation!
+
+    def write_block_to_file(self, begin, block):
         print 'Writing to piece', self.index, 'at position', begin
         self.write_file.seek(begin)
         self.write_file.write(block)
 
-    #Exposed method
+    # TODO: Fix interface after block message to use add block
+    def add_block(self, begin, block):
+        self.update_block_count()
+        self.write_block_to_file(begin, block)
+        if self.check_if_finished():
+            self.save_or_delete()
+
+    # Exposed method
     def get_next_block_and_peer_to_request(self):
         print 'Getting block ', self.blocks_requested, ' of ', self.num_blocks
         begin = self.blocks_requested * BLOCK_LENGTH
@@ -59,6 +92,6 @@ class Piece(object):
         if len(self.peers):
             peer = random.choice(self.peers)
         else:
-            #TODO: Setup some sort of error here?
+            # TODO: Setup some sort of error here?
             peer = None
         return (block_info, peer)
