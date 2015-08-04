@@ -30,6 +30,7 @@ class Reactor:
         self.message_queues[socket] = message_queue
 
     def get_data(self):
+        #logging.debug('What is reactors self.sockets? %s', self.sockets)
         while self.sockets:
             self.read_write_live_sockets()
 

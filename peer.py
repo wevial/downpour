@@ -63,6 +63,7 @@ class Peer:
     def connect(self):
         logging.debug('Attempting to connect to peer %s', self)
         try:
+            self.socket.settimeout(5.0)
             self.socket.connect((self.ip, self.port))
         except Exception as e:
             logging.info('Failed to connect to peer %s', self)
@@ -72,12 +73,16 @@ class Peer:
 
     def send_and_receive_handshake(self, handshake):
         try:
+            logging.info('Sending handshake')
+#            logging.info('handshake: %s', handshake)
             self.sendall(handshake)
+            logging.info('Handshake sent, receiving data')
             peer_handshake = self.receive_data(68, 68)
+            logging.info('Peer handshake received.')
         except Exception as e:
             raise e
         else:
-            logging.debug('returning peer handshake')
+            logging.debug('Returning peer handshake')
             return peer_handshake
 
     def process_and_act_on_incoming_data(self, data):

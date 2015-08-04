@@ -54,7 +54,9 @@ class Client(object):
                                 self.info_hash,
                                 self.peer_id
                                 )
+        assert handshake != None
         assert len(handshake) == 49 + len(pstr)
+        logging.info('Handshake constructed.')
         return handshake
 
     def setup_tracker(self):
@@ -74,15 +76,16 @@ class Client(object):
                     continue
                 peer.connect()
                 peer_handshake = peer.send_and_receive_handshake(self.handshake)
-                logging.debug('handhsake returned')
+                logging.debug('Handshake returned.')
                 if peer.verify_handshake(peer_handshake, self.info_hash):
-                    logging.debug('handshake verified')
+                    logging.debug('Handshake verified. Adding peer to peer list')
                     self.add_peer(i, peer)
                     if not self.reactor_activated:
                         self.activate_reactor()
                         self.reactor_activated = True
             except Exception as e:
-                logging.info('Error LOLOL %s connecting to peer %s', e, peer)
+                logging.debug('Error %s connecting to peer %s. [In construct_peers]', e, peer)
+        logging.debug('LOL')
 
     def get_self_ip(self):
         # http://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib/166520#166520
@@ -98,7 +101,7 @@ class Client(object):
         self.reactor.add_peer_socket(peer)
 
     def activate_reactor(self):
-        logging.debug('activating reactor')
+        logging.debug('Activating reactor.')
         self.reactor.get_data()
 
     def process_raw_hash_list(self, hash_list, size):
@@ -145,30 +148,9 @@ class Client(object):
     def check_if_dload_file_exists(self):
         file_path = os.path.join(self.dload_dir, self.file_name)
         if os.path.exists(file_path):
-            raise SystemExit('The file you are trying to download already exists.')
+            raise SystemExit('This file has already been downloaded.')
             # Do something to cancel the rest of the setup
 
-    def build_handshake(self):
-        pstr = 'BitTorrent protocol'
-        handshake = struct.pack('B' + str(len(pstr)) + 's8x20s20s',
-                                # In format string: 8x => reserved null bytes
-                                len(pstr),
-                                pstr,
-                                self.info_hash,
-                                self.peer_id
-                                )
-        assert len(handshake) == 49 + len(pstr)
-        self.handshake = handshake
-
-    def setup_client_and_tracker(self):
-        self.decode_torrent_and_start_setup()
-        self.tracker = Tracker(self)
-        self.tracker.construct_tracker_url()
-        self.tracker.send_request_and_parse_response()
-        self.build_handshake()
-
-    def add_peer(self, id_num, peer):
-        self.peers[id_num] = peer
 
     # TODO implement real strategies :)
     def start_pieces_in_order_strategy(self):

@@ -39,7 +39,8 @@ class Tracker:
         left = int(self.params['left']) - num_bytes_dloaded
         self.params['downloaded'] = str(downloaded) 
         self.params['left'] = str(left)
-        logging.info('%s bytes downloaded (%s%)', downloaded, (downloaded/self.file_length))
+        percent_dloaded = downloaded / self.file_length
+        logging.info('%s bytes downloaded (%s / 100)', downloaded, percent_dloaded)
         logging.info('%s bytes left to download', left)
 
     def construct_tracker_url(self, announce_url):
