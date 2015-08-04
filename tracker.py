@@ -1,13 +1,15 @@
 import bencode as B
 import requests
 import urllib as U
-from peer import Peer
+import logging
+
 
 class Tracker:
-    def __init__(self, client):
+    def __init__(self, client, announce_url):
+        logging.info('setting up tracker with announce url %s', announce_url)
         self.client = client
-        self.params_order = ['uploaded', 'compact', 'info_hash', 'event', 
-                'downloaded', 'peer_id', 'port', 'left']
+        self.params_order = ['uploaded', 'compact', 'info_hash', 'event',
+                             'downloaded', 'peer_id', 'port', 'left']
         self.params = {
             'uploaded': '0',
             'compact': '1',
@@ -15,23 +17,22 @@ class Tracker:
             'event': 'started',
             'downloaded': '0',
             'peer_id': client.peer_id,
-            'port': '6881', 
+            'port': '6881',
             'left': str(client.file_length),
         }
-#        self.url = self.construct_url(client.announce_url)
+        self.url = self.construct_tracker_url(announce_url)
 
-    def construct_tracker_url(self):
-        """ Construct the full URL for the torrent we're connecting to """ 
-        #print self.params
-        params = '&'.join('%s=%s' % (key, U.quote(self.params[key])) 
+    def construct_tracker_url(self, announce_url):
+        """ Construct the full URL for the torrent we're connecting to """
+        # print self.params
+        params = '&'.join('%s=%s' % (key, U.quote(self.params[key]))
                 for key in self.params_order)
-        tracker_url = self.client.announce_url + '?' +  params
-        self.url = tracker_url
+        tracker_url = announce_url + '?' +  params
         return tracker_url
 
     def send_request_to_tracker_server(self):
         """ Returns bencoded handshake request """
-        print "Request sent to tracker server."
+        logging.info("Request sent to tracker server.")
         return requests.get(url=self.url)
 
     def peer_host_port_vals(self, peers):
@@ -52,18 +53,12 @@ class Tracker:
         byte_list = self.peer_host_port_vals(peer_bytes)
         return [(self.get_host_string(peer), self.get_port(peer)) for peer in byte_list]
 
-    def construct_peers_for_client(self, peer_tuples):
-        peers = [Peer(ip, port, self.client) for ip, port in peer_tuples]
-        for i, peer in enumerate(peers):
-            self.client.add_peer(i, peer)
-
     def parse_response(self, response):
+        logging.info('Response received from tracker, now parsing')
         response_text = B.bdecode(response.text)
         peer_ips = self.peers_to_ip_tuples(response_text['peers'])
-        self.construct_peers_for_client(peer_ips)
-        print 'Tracker response parsed.'
-        
+        return peer_ips
+
     def send_request_and_parse_response(self):
         response = self.send_request_to_tracker_server()
-        self.parse_response(response)
-
+        return self.parse_response(response)

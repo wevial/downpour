@@ -28,8 +28,6 @@ class Peer:
         return str((self.ip, self.port))
 
     # WRAPPER METHODS FOR SOCKET
-    def connect(self):
-        self.socket.connect((self.ip, self.port))
 
     def sendall(self, msg_bytes):
         self.socket.sendall(msg_bytes)
@@ -48,18 +46,24 @@ class Peer:
         self.peer_id = peer_id
         return peer_hash == info_hash
 
-    def verify_and_initiate_communication(self, handshake, info_hash):
-        if self.verify_handshake(handshake, info_hash):
-            self.add_to_message_queue(InterestedMsg())
+    def connect(self):
+        logging.info('Attempting to connect to peer %s', self)
+        try:
+            self.socket.connect((self.ip, self.port))
+        except IOError:
+            logging.info('Failed to connect to peer %s', self)
+            raise
         else:
-            raise ConfirmationError('peer handshake does not match info hash')
+            logging.info('You have connected to peer %s', self)
 
     def send_and_receive_handshake(self, handshake):
-        self.connect()
-        logging.info('You have connected to peer %s', self)
-        self.sendall(handshake)
-        peer_handshake = receive_data(self, amount_expected=68, block_size=68)
-        return peer_handshake
+        try:
+            self.sendall(handshake)
+            peer_handshake = receive_data(self, amount_expected=68, block_size=68)
+        except IOError:
+            raise
+        else:
+            return peer_handshake
 
 
     def process_and_act_on_incoming_data(self, data):
