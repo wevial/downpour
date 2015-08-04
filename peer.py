@@ -29,6 +29,16 @@ class Peer:
 
     # WRAPPER METHODS FOR SOCKET
 
+    def connect(self):
+        logging.debug('Attempting to connect to peer %s', self)
+        try:
+            self.socket.connect((self.ip, self.port))
+        except Exception as e:
+            logging.info('Failed to connect to peer %s', self)
+            raise e
+        else:
+            logging.debug('You have connected to peer %s', self)
+
     def sendall(self, msg_bytes):
         self.socket.sendall(msg_bytes)
 
@@ -47,27 +57,6 @@ class Peer:
                 pass
         return data
 
-    # TODO: Set up message queue to maximize bytes per trip over the servers.
-    def send_message(self, message):
-        bytes_to_send = Msg.get_buffer_from_message(message)
-        self.sendall(bytes_to_send)
-
-    def verify_handshake(self, handshake, info_hash):
-        # lenpstr - pstr - reserved - info hash - peer id
-        (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
-        self.peer_id = peer_id
-        return peer_hash == info_hash
-
-    def connect(self):
-        logging.debug('Attempting to connect to peer %s', self)
-        try:
-            self.socket.connect((self.ip, self.port))
-        except Exception as e:
-            logging.info('Failed to connect to peer %s', self)
-            raise e
-        else:
-            logging.debug('You have connected to peer %s', self)
-
     def send_and_receive_handshake(self, handshake):
         try:
             self.sendall(handshake)
@@ -78,10 +67,21 @@ class Peer:
             logging.debug('returning peer handshake')
             return peer_handshake
 
+    def verify_handshake(self, handshake, info_hash):
+        # lenpstr - pstr - reserved - info hash - peer id
+        (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
+        self.peer_id = peer_id
+        return peer_hash == info_hash
+
     def process_and_act_on_incoming_data(self, data):
         (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
         self.act_on_messages(messages)
         self.update_buffer(buf_remainder)
+    
+    # TODO: Set up message queue to maximize bytes per trip over the servers.
+    def send_message(self, message):
+        bytes_to_send = Msg.get_buffer_from_message(message)
+        self.sendall(bytes_to_send)
 
     def act_on_messages(self, messages):
         message_actions = {

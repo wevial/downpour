@@ -40,14 +40,33 @@ class Piece(object):
         print 'peer ', peer, ' has piece ', self.index
         self.peers.append(peer)
 
-    def write_block_to_file(self, begin, block):
+    def check_info_hash(self):
+        self.write_file.seek(0)
+        file_bytes = self.write_file.read()
+        computed_hash = hashlib.sha1(file_bytes).digest()
+        return computed_hash == self.piece_hash
+
+    def reset(self):
+        self.blocks_received = 0
+        self.blocks_requested = 0
+        self.make_write_file()
+        # TODO: UPDATE CLIENT
+
+    def check_if_finished(self):
+        return self.blocks_received == self.num_blocks
+
+    def update_block_count(self):
         self.blocks_received += 1
-        #Add if / else for last block situation!
-        print 'Writing to piece ', self.index, ' at position ', begin
+
+    def write_block_to_file(self, begin, block):
         self.write_file.seek(begin)
         self.write_file.write(block)
 
-    #Exposed method
+    # TODO: Fix interface after block message to use add block
+    def add_block(self, begin, block):
+        self.update_block_count()
+        self.write_block_to_file(begin, block)
+
     def get_next_block_and_peer_to_request(self):
         print 'Getting block ', self.blocks_requested, ' of ', self.num_blocks
         begin = self.blocks_requested * BLOCK_LENGTH
