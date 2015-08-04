@@ -118,6 +118,12 @@ class Client(object):
             pieces.append(Piece(i, length, hash_list[i]))
         self.pieces = pieces
 
+    def add_piece_to_bitfield(self, index):
+        if not self.bitfield[index]:
+            self.bitfield.invert(index)
+        else:
+            logging.warning('Should never get save same piece more than once!')
+
     # TODO implement real strategies :)
     def start_pieces_in_order_strategy(self):
         for piece_id, do_i_have in enumerate(self.bitfield):
@@ -148,7 +154,7 @@ class Client(object):
         (piece_index, begin, block_length) = block_info
         logging.info('got block from piece %s', piece_index)
         piece = self.pieces[piece_index]
-        piece.write_block_to_file(begin, block)
+        piece.add_block(begin, block)
         if piece_index == self.num_pieces - 1:
             logging.info('Wrote all pieces, stitching them together')
             stitcher = Stitcher(self.file_name, self.num_pieces)
