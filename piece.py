@@ -21,12 +21,13 @@ class Piece(object):
         # print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
         self.blocks_requested = 0
         self.blocks_received = 0
-        self.create_write_file(dload_dir)
+        self.dload_dir = dload_dir
+        self.create_write_file()
 
         #TODO: Separate out temp file creation from file writing
 
-    def create_write_file(self, dload_dir):
-        file_path = os.path.join(dload_dir, str(self.index))
+    def create_write_file(self):
+        file_path = os.path.join(self.dload_dir, str(self.index))
         open(file_path, 'wa').close() # Create file if it does not exist
         self.write_file = open(file_path, 'r+b')
 
@@ -43,7 +44,7 @@ class Piece(object):
     def check_info_hash(self):
         self.write_file.seek(0)
         file_bytes = self.write_file.read()
-        computed_hash = hashlib.sha1(file_bytes).digest()
+        computed_hash = H.sha1(file_bytes).digest()
         return computed_hash == self.piece_hash
 
     def save_or_delete(self):
@@ -57,7 +58,7 @@ class Piece(object):
     def reset(self):
         self.blocks_received = 0
         self.blocks_requested = 0
-        self.make_write_file(True)
+        self.create_write_file()
         # TODO: UPDATE CLIENT
 
     def check_if_finished(self):
