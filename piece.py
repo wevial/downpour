@@ -2,6 +2,7 @@ BLOCK_LENGTH = 2 ** 14
 import random
 import os
 import logging
+import hashlib
 
 
 class Piece(object):
@@ -62,7 +63,6 @@ class Piece(object):
         self.write_file.seek(begin)
         self.write_file.write(block)
 
-    # TODO: Fix interface after block message to use add block
     def add_block(self, begin, block):
         self.update_block_count()
         self.write_block_to_file(begin, block)
@@ -70,6 +70,7 @@ class Piece(object):
     def get_next_block_and_peer_to_request(self):
         print 'Getting block ', self.blocks_requested, ' of ', self.num_blocks
         begin = self.blocks_requested * BLOCK_LENGTH
+        # TODO: I think the details here are creating redundant requests
         if self.blocks_requested == self.num_blocks:
             length = self.length - self.blocks_requested * BLOCK_LENGTH
             logging.info('Calculating length of last block: %s', length)

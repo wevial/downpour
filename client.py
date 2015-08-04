@@ -144,7 +144,7 @@ class Client(object):
     def get_next_block(self, piece_index):
         self.pieces[piece_index].get_next_block_and_peer_to_request()
 
-    def write_block_to_file(self, block_info, block):
+    def add_block(self, block_info, block):
         (piece_index, begin, block_length) = block_info
         logging.info('got block from piece %s', piece_index)
         piece = self.pieces[piece_index]

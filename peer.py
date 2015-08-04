@@ -164,7 +164,7 @@ class Peer:
 
     # After block message
     def update_and_store_block(self, block_info, block):
-        self.client.write_block_to_file(block_info, block)
+        self.client.add_block(block_info, block)
 
     # After cancel message
     # TODO
