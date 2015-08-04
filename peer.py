@@ -28,6 +28,8 @@ class Peer:
         return str((self.ip, self.port))
 
     # WRAPPER METHODS FOR SOCKET
+    def close(self):
+        self.socket.close()
 
     def sendall(self, msg_bytes):
         self.socket.sendall(msg_bytes)
@@ -36,7 +38,7 @@ class Peer:
         logging.debug('Waiting for handshake')
         amount_received = 0
         data = ''
-        while amount_received<amount_expected:
+        while amount_received < amount_expected:
             try:
                 new_data = self.socket.recv(block_size)
                 logging.info('Received %s bytes from peer', len(new_data))
