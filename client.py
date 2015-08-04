@@ -4,7 +4,7 @@ import struct
 from bitstring import BitArray
 import logging
 
-logging.basicConfig(filename='example.log', filemode='w', level=logging.INFO)
+logging.basicConfig(filename='example.log', filemode='w', level=logging.DEBUG)
 
 from tracker import Tracker
 from piece import Piece
@@ -49,21 +49,23 @@ class Client(object):
 
     def construct_peers(self, peer_tuples):
         peers = [Peer(ip, port, self) for ip, port in peer_tuples]
-        logging.info('Attempting to connect to peers %s', peer_tuples)
+        logging.debug('Attempting to connect to peers %s', peer_tuples)
         for i, peer in enumerate(peers):
             try:
                 peer.connect()
                 peer_handshake = peer.send_and_receive_handshake(self.handshake)
-            except IOError:
-                logging.info('Error connecting to peer %s', peer)
-            else:
-                if peer.verify(peer_handshake, self.handshake):
+                logging.debug('handhsake returned')
+                if peer.verify_handshake(peer_handshake, self.info_hash):
+                    logging.debug('handshake verified')
                     self.add_peer(i, peer)
                     if not self.reactor_activated:
                         self.activate_reactor()
+                        self.reactor_activated = True
+            except Exception as e:
+                logging.info('Error %s connecting to peer %s', e, peer)
 
     def activate_reactor(self):
-        logging.info('activating reactor')
+        logging.debug('activating reactor')
         self.reactor.get_data()
 
     def build_handshake(self):

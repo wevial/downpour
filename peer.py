@@ -32,8 +32,20 @@ class Peer:
     def sendall(self, msg_bytes):
         self.socket.sendall(msg_bytes)
 
-    def recv(self, num_bytes):
-        return self.socket.recv(num_bytes)
+    def receive_data(self, amount_expected, block_size):
+        logging.debug('Waiting for handshake')
+        amount_received = 0
+        data = ''
+        while amount_received<amount_expected:
+            try:
+                new_data = self.socket.recv(block_size)
+                logging.info('Received %s bytes from peer', len(new_data))
+                amount_received += len(new_data)
+                data += new_data
+            except Exception as e:
+                logging.debug('Problem with handshake socket')
+                pass
+        return data
 
     # TODO: Set up message queue to maximize bytes per trip over the servers.
     def send_message(self, message):
@@ -47,24 +59,24 @@ class Peer:
         return peer_hash == info_hash
 
     def connect(self):
-        logging.info('Attempting to connect to peer %s', self)
+        logging.debug('Attempting to connect to peer %s', self)
         try:
             self.socket.connect((self.ip, self.port))
-        except IOError:
+        except Exception as e:
             logging.info('Failed to connect to peer %s', self)
-            raise
+            raise e
         else:
-            logging.info('You have connected to peer %s', self)
+            logging.debug('You have connected to peer %s', self)
 
     def send_and_receive_handshake(self, handshake):
         try:
             self.sendall(handshake)
-            peer_handshake = receive_data(self, amount_expected=68, block_size=68)
-        except IOError:
-            raise
+            peer_handshake = self.receive_data(68, 68)
+        except Exception as e:
+            raise e
         else:
+            logging.debug('returning peer handshake')
             return peer_handshake
-
 
     def process_and_act_on_incoming_data(self, data):
         (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
@@ -129,6 +141,7 @@ class Peer:
     def setup_bitfield(self, bitfield_buf):
         # TODO implement non-naive function for updating interested status
         self.am_interested = True
+        self.add_to_message_queue(InterestedMsg())
         bitfield = BitArray(bytes=bitfield_buf)
         self.bitfield = bitfield
         for piece_index, bit in enumerate(bitfield):
