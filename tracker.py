@@ -18,7 +18,27 @@ class Tracker:
             'port': '6881', 
             'left': str(client.file_length),
         }
+        self.file_length = client.file_length
 #        self.url = self.construct_url(client.announce_url)
+
+    def is_download_complete(self):
+        if self.params['event'] == 'completed':
+            return True
+        elif int(self.params['downloded']) == self.file_length:
+            logging.info('Tracker has marked download as completed')
+            assert int(self.params['left']) == 0
+            self.params['event'] = 'completed'
+            return True
+        logging.debug('Tracker says download has not completed')
+        return False
+                
+    def update_download_stats(self, num_bytes_dloaded):
+        downloaded = int(self.params['downloaded']) + num_bytes_dloaded
+        left = int(self.params['left']) - num_bytes_dloaded
+        self.params['downloaded'] = str(downloaded) 
+        self.params['left'] = str(left)
+        logging.info('%s bytes downloaded (%s%)', downloaded, (downloaded/self.file_length))
+        logging.info('%s bytes left to download', left)
 
     def construct_tracker_url(self):
         """ Construct the full URL for the torrent we're connecting to """ 

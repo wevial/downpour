@@ -143,8 +143,19 @@ class Client(object):
         logging.info('Got block to write from piece %s', piece_index)
         piece = self.pieces[piece_index]
         piece.write_block_to_file(begin, block)
+        self.tracker.update_download_stats(block_length)
         if piece_index == self.num_pieces - 1:
-            self.stitch_files()
+            # FINALIZE IS ONLY TEMPORARILY HERE!!! Naive strategy only
+            self.finalize_download()
+    
+    def finalize_download(self):
+        logging.info('Finalizing download')
+        assert self.tracker.is_download_complete()
+        self.stitch_files()
+        # Graceful shutdown 
+        for peer in self.peers.itervalues():
+            print 'hi'
+        sys.exit()
 
     def stitch_files(self):
         logging.info('Wrote all pieces, stitching them together')
