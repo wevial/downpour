@@ -1,7 +1,9 @@
+from __future__ import division
 import hashlib as H
 import random
 import os
 import logging
+import math
 
 BLOCK_LENGTH = 2 ** 14
 
@@ -17,7 +19,7 @@ class Piece(object):
         self.piece_hash = piece_hash
         self.rarity = 0
         self.peers = []
-        self.num_blocks = self.length / BLOCK_LENGTH # Python 2 division!
+        self.num_blocks = math.ceil(self.length / BLOCK_LENGTH)  
         # print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
         self.blocks_requested = 0
         self.blocks_received = 0
