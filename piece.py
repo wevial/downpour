@@ -35,7 +35,7 @@ class Piece(object):
         return str(self.index)
 
     def not_all_blocks_requested(self):
-        return self.blocks_requested <= self.num_blocks
+        return self.blocks_requested < self.num_blocks
 
     def add_peer_to_peer_list(self, peer):
         print 'peer ', peer, ' has piece ', self.index
@@ -81,10 +81,11 @@ class Piece(object):
 
     # Exposed method
     def get_next_block_and_peer_to_request(self):
-        print 'Getting block ', self.blocks_requested, ' of ', self.num_blocks
+        logging.debug( 'Getting block ', self.blocks_requested, ' of ', self.num_blocks)
         begin = self.blocks_requested * BLOCK_LENGTH
-        if self.blocks_requested == self.num_blocks:
+        if self.blocks_requested == self.num_blocks - 1:
             length = self.length - self.blocks_requested * BLOCK_LENGTH
+            # TODO: Why is this getting printed for all blocks?
             logging.info('Calculating length of last block: %s', length)
         else:
             length = BLOCK_LENGTH # This is another repetitive assignment

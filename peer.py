@@ -85,10 +85,15 @@ class Peer:
             logging.debug('Returning peer handshake')
             return peer_handshake
 
+    # TODO: Clean up handling of block messages here to ONLY send block bytes
     def process_and_act_on_incoming_data(self, data):
         (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
+        logging.debug('Converting %s bytes from buffer and %s bytes from reactor',
+                       len(self.buf), len(data))
+        logging.debug('After extracting messages, %s bytes remain', len(buf_remainder))
         self.act_on_messages(messages)
         self.update_buffer(buf_remainder)
+        logging.debug('Now %s bytes remain in buffer', len(self.buf))
 
     def act_on_messages(self, messages):
         message_actions = {
@@ -171,6 +176,9 @@ class Peer:
 
     # After block message
     def update_and_store_block(self, block_info, block):
+        logging.debug('Storing block length %s beginning at index %s for piece %s',
+                block_info[2], block_info[1], block_info[0])
+        logging.debug('Actual length of block: %s', len(block))
         self.client.write_block_to_file(block_info, block)
 
     # After cancel message

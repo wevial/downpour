@@ -182,7 +182,6 @@ class Client(object):
 
     def write_block_to_file(self, block_info, block):
         (piece_index, begin, block_length) = block_info
-        logging.info('Got block to write from piece %s', piece_index)
         piece = self.pieces[piece_index]
         piece.add_block(begin, block)
         self.tracker.update_download_stats(block_length)

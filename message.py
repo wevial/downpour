@@ -1,5 +1,7 @@
 import struct
 
+BLOCK_LENGTH = 2 ** 14
+
 
 class Msg(object):
     # These class variables are the default, but may be overriden by subclass
@@ -43,15 +45,17 @@ class Msg(object):
                     piece_index, = struct.unpack('!I', buf[5:9])
                     messages.append(HaveMsg(piece_index=piece_index))
                 elif msg_id == 5:
-                    bitfield_buf = buf[5:5 + msg_len - 1]
+                    bitfield_buf = buf[5: msg_len + 4]
                     messages.append(BitfieldMsg(bitfield_buf=bitfield_buf))
                 elif msg_id == 6:
                     block_info = struct.unpack('!III', buf[5:17])
                     messages.append(RequestMsg(block_info=block_info))
                 elif msg_id == 7:
-                    piece_index, block_index = struct.unpack('!II', buf[5:13])
-                    block = buf[13:]  # buffer is in bytes form, no need to unpack
-                    block_info = (piece_index, block_index, len(block))
+                    piece_index, block_begin = struct.unpack('!II', buf[5:13])
+                    block_length = msg_len - 9
+                    block = buf[13:msg_len + 4]  # buffer is in bytes form, no need to unpack
+                    block_info = (piece_index, block_begin, block_length)
+
                     messages.append(BlockMsg(block_info=block_info, block=block))
                 elif msg_id == 8:
                     block_info = struct.unpack('!III', buf[5:17])

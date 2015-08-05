@@ -68,7 +68,7 @@ class Reactor:
                 pass
             else:
                 data += new_data
-                logging.debug('Received data in the reactor. Data len: %s', len(new_data))
+                # logging.debug('Received data in the reactor. Data len: %s', len(new_data))
         except IOError as e:
             logging.warning('Error %s', e)
         return data
