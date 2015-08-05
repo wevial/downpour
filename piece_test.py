@@ -11,7 +11,11 @@ class TestPieceInitialization(unittest.TestCase):
         piece = Piece(1, 2**14, 'abc')
         self.assertEqual(piece.num_blocks, 1)
         self.assertTrue(piece.not_all_blocks_requested()) 
-        self.assertEqual(piece.get_next_block_and_peer_to_request()[1], None)
+        (block_info, peer) = piece.get_next_block_and_peer_to_request()
+        self.assertEqual(peer, None)
+        self.assertEqual(block_info[0], 1)
+        self.assertEqual(block_info[1], 0)
+        self.assertEqual(block_info[2], 2**14)
         self.assertFalse(piece.not_all_blocks_requested())
 
     def test_piece_two_blocks(self):
