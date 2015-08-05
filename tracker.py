@@ -20,26 +20,29 @@ class Tracker:
             'port': '6881',
             'left': str(client.file_length),
         }
+        self.announce_url = announce_url
         self.url = self.construct_tracker_url(announce_url)
         self.file_length = client.file_length
 
     def is_download_complete(self):
-        if self.params['event'] == 'completed':
-            return True
-        elif int(self.params['downloded']) == self.file_length:
+        if int(self.params['downloaded']) == self.file_length:
             logging.info('Tracker has marked download as completed')
-            assert int(self.params['left']) == 0
+            logging.debug('Left to dload: %s', self.params['left'])
             self.params['event'] = 'completed'
-            return True
-        logging.debug('Tracker says download has not completed')
-        return False
+        return self.params['event'] == 'completed'
+
+    def send_completed_msg_to_tracker_server(self):
+        logging.info('Tell the tracker that the download has completed')
+        tracker_url = self.construct_tracker_url(self.announce_url)
+        requests.get(url=tracker_url)
+        logging.info('Tracker response to completed download: %s', response)
                 
     def update_download_stats(self, num_bytes_dloaded):
         downloaded = int(self.params['downloaded']) + num_bytes_dloaded
         left = int(self.params['left']) - num_bytes_dloaded
         self.params['downloaded'] = str(downloaded) 
         self.params['left'] = str(left)
-        percent_dloaded = downloaded / self.file_length
+        percent_dloaded = int(float(downloaded)/ float(self.file_length) * 100.0)
         logging.info('%s bytes downloaded (%s / 100)', downloaded, percent_dloaded)
         logging.info('%s bytes left to download', left)
 
@@ -53,7 +56,7 @@ class Tracker:
 
     def send_request_to_tracker_server(self):
         """ Returns bencoded handshake request """
-        logging.info("Request sent to tracker server.")
+        logging.info('Request sent to tracker server.')
         return requests.get(url=self.url)
 
     def peer_host_port_vals(self, peers):

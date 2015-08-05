@@ -191,9 +191,13 @@ class Client(object):
     
     def finalize_download(self):
         logging.info('Finalizing download')
-        # assert self.tracker.is_download_complete()
+        if not self.tracker.is_download_complete():
+            raise SystemExit('Download didnt complete. Shutting down.')
         self.stitch_files()
         # Graceful shutdown 
+        # Send Tracker server completed info
+        self.tracker.send_completed_msg_to_tracker_server()
+        # Close peer sockets
         logging.info('Shutting down connection with peers')
         for peer in self.peers.itervalues():
             peer.close()

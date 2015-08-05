@@ -83,7 +83,7 @@ class Piece(object):
 
     # Exposed method
     def get_next_block_and_peer_to_request(self):
-        logging.debug( 'Getting block ', self.blocks_requested, ' of ', self.num_blocks)
+        logging.debug('Getting block %s of %s.', self.blocks_requested, self.num_blocks)
         begin = self.blocks_requested * BLOCK_LENGTH
         if self.blocks_requested == self.num_blocks - 1:
             length = self.length - self.blocks_requested * BLOCK_LENGTH
