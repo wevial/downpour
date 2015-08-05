@@ -1,8 +1,11 @@
+from __future__ import division
 BLOCK_LENGTH = 2 ** 14
 import random
 import os
 import logging
 import hashlib
+import math
+
 
 
 class Piece(object):
@@ -16,8 +19,8 @@ class Piece(object):
         self.piece_hash = piece_hash
         self.rarity = 0
         self.peers = []
-        self.num_blocks = self.length / BLOCK_LENGTH #Python 2 division!
-        # print 'initialized piece: ', index, ' length ', length, ' # blocks ', self.num_blocks
+        self.num_blocks = math.ceil( self.length / BLOCK_LENGTH )  # Python 2 division!
+        # print 'initialized piece: ', index, ' length ', length, '  # blocks ', self.num_blocks
         self.blocks_requested = 0
         self.blocks_received = 0
         self.make_write_file()
@@ -34,8 +37,6 @@ class Piece(object):
     def __repr__(self):
         return str(self.index)
 
-    def not_all_blocks_requested(self):
-        return self.blocks_requested <= self.num_blocks
 
     def add_peer_to_peer_list(self, peer):
         print 'peer ', peer, ' has piece ', self.index
@@ -67,11 +68,14 @@ class Piece(object):
         self.update_block_count()
         self.write_block_to_file(begin, block)
 
+    def not_all_blocks_requested(self):
+        return self.blocks_requested < self.num_blocks
+
     def get_next_block_and_peer_to_request(self):
         print 'Getting block ', self.blocks_requested, ' of ', self.num_blocks
         begin = self.blocks_requested * BLOCK_LENGTH
         # TODO: I think the details here are creating redundant requests
-        if self.blocks_requested == self.num_blocks:
+        if self.blocks_requested == self.num_blocks - 1:
             length = self.length - self.blocks_requested * BLOCK_LENGTH
             logging.info('Calculating length of last block: %s', length)
         else:
