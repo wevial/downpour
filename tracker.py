@@ -42,7 +42,7 @@ class Tracker:
         left = int(self.params['left']) - num_bytes_dloaded
         self.params['downloaded'] = str(downloaded) 
         self.params['left'] = str(left)
-        percent_dloaded = int(float(downloaded)/ float(self.file_length) * 100.0)
+        percent_dloaded = int(float(downloaded) / float(self.file_length) * 100.0)
         logging.info('%s bytes downloaded (%s / 100)', downloaded, percent_dloaded)
         logging.info('%s bytes left to download', left)
 
