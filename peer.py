@@ -17,7 +17,8 @@ class Peer:
         self.am_interested = False
         self.peer_is_interested = False
         self.buf = ''  # Data buffer
-        self.time_of_last_msg = time.time()
+        self.time_last_msg_received = time.time()
+        self.time_last_msg_sent = 0.0
         self.is_alive = False
         self.client = client
         self.num_pieces = client.num_pieces
@@ -50,6 +51,7 @@ class Peer:
         return data
 
     # TODO: Set up message queue to maximize bytes per trip over the servers.
+    # this function is not used
     def send_message(self, message):
         bytes_to_send = Msg.get_buffer_from_message(message)
         self.sendall(bytes_to_send)
@@ -63,7 +65,7 @@ class Peer:
     def connect(self):
         logging.debug('Attempting to connect to peer %s', self)
         try:
-            self.socket.settimeout(5.0)
+            self.socket.settimeout(10.0)
             self.socket.connect((self.ip, self.port))
         except Exception as e:
             logging.info('Failed to connect to peer %s', self)
@@ -115,20 +117,36 @@ class Peer:
             (message_action, message_params) = message_actions[msg.msg_id]
             message_args = [getattr(msg, param) for param in message_params]
             message_action(*message_args)
+            self.update_time_last_msg_received()
 
     def update_buffer(self, buf):
         self.buf = buf
 
-    def update_time_of_last_msg(self):
-        self.time_of_last_msg = time.time()
+    def update_time_last_msg_received(self):
+        self.time_last_msg_received = time.time()
+        # TODO: Account for when peer is no longer alive and deal accordingly
+
+    def update_time_last_msg_sent(self):
+        self.time_last_msg_sent = time.time()
+
+    def check_if_client_will_time_out(self):
+        """ Check to see if client needs to send a keep alive message to avoid
+            getting timedout. If its been over 60 seconds, send a keep alive
+            message to peer. """
+        current_time = time.time()
+        return current_time - self.time_last_msg_sent > 60
+
+    def send_keep_alive(self):
+        logging.info('Sending keep alive message to %s', self)
+        return KeepAliveMsg().get_buffer_from_message()
 
     # Upon message id -1
     def keep_alive(self):
-        self.time_of_last_msg = time.time()
+        self.time_last_msg = time.time()
         self.is_alive = True
 
     def check_is_still_alive(self):
-        time_elapsed = time.time() - self.time_of_last_msg
+        time_elapsed = time.time() - self.time_last_msg
         self.is_alive = time_elapsed < 120  # Timeout timer set at 2 mins
         return self.is_alive
 
@@ -190,6 +208,8 @@ class Peer:
     def add_to_message_queue(self, msg):
         logging.info('adding message %s to queue.', msg)
         self.msg_queue.put(msg)
+        # TODO: Make time last msg sent update when its sent, not added to queue
+        self.update_time_last_msg_sent()
 
     def get_from_message_queue(self):
         if self.msg_queue.empty():

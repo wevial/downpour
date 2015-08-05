@@ -32,10 +32,10 @@ class Tracker:
         return self.params['event'] == 'completed'
 
     def send_completed_msg_to_tracker_server(self):
-        logging.info('Tell the tracker that the download has completed')
+        logging.info('Tell the tracker server that the download has completed')
         tracker_url = self.construct_tracker_url(self.announce_url)
         requests.get(url=tracker_url)
-        logging.info('Tracker response to completed download: %s', response)
+        logging.info('Tracker response to completed download: %s')
                 
     def update_download_stats(self, num_bytes_dloaded):
         downloaded = int(self.params['downloaded']) + num_bytes_dloaded

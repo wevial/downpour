@@ -96,7 +96,7 @@ class Client(object):
         return ip
 
     def add_peer(self, id_num, peer):
-        logging.info('adding peer %s to peer list', peer)
+        logging.info('Adding peer %s to peer list (in add_peer)', peer)
         self.peers[id_num] = peer
         self.reactor.add_peer_socket(peer)
 
@@ -194,10 +194,7 @@ class Client(object):
         if not self.tracker.is_download_complete():
             raise SystemExit('Download didnt complete. Shutting down.')
         self.stitch_files()
-        # Graceful shutdown 
-        # Send Tracker server completed info
         self.tracker.send_completed_msg_to_tracker_server()
-        # Close peer sockets
         logging.info('Shutting down connection with peers')
         for peer in self.peers.itervalues():
             peer.close()

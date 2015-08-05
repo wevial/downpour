@@ -25,7 +25,6 @@ class Piece(object):
         self.blocks_received = 0
         self.dload_dir = dload_dir
         self.create_write_file()
-
         #TODO: Separate out temp file creation from file writing
 
     def create_write_file(self):

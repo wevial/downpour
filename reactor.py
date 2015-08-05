@@ -1,6 +1,7 @@
 import select
 import logging
 import Queue
+import time
 
 MSG_LENGTH = 4096
 
@@ -16,12 +17,19 @@ class Reactor:
         # Initialize with empty list
         self.readers = {}
         self.message_queues = {}
+        self.client_timeouts = {}
         self.sockets = []
 
     def add_peer_socket(self, peer):
         self.sockets.append(peer.socket)
         self.register_reader(peer.socket, peer.process_and_act_on_incoming_data)
         self.register_message_queue(peer.socket, peer.get_from_message_queue)
+        self.register_client_timeout(peer.socket, peer.check_if_client_will_time_out, peer.send_keep_alive)
+        # TODO: destroy peer if it has timed out
+        # self.register_peer_timeout(peer.socket, peer.check_is_still_alive)
+
+    def register_client_timeout(self, socket, check_alive, keep_alive):
+        self.client_timeouts[socket] = (check_alive, keep_alive)
 
     def register_reader(self, socket, callback):
         self.readers[socket] = callback
@@ -41,13 +49,19 @@ class Reactor:
         rlist, wlist, _ = select.select(socks, socks, socks)
         for sock in rlist:
             data = self.read_all(sock)
+            self.client_timeouts[sock]
             if data:
                 self.readers[sock](data)
+            elif self.client_timeouts[sock][0]():
+                # Bypass message queue to send keep alive message
+                keep_alive_msg_bytes = self.client_timeouts[sock][1]()
+                sock.sendall(keep_alive_msg_bytes)
             else:
                 # TODO: Destroy peer
                 socks.remove(sock)
                 del self.readers[sock]
                 del self.message_queues[sock]
+                del self.client_timeouts[sock]
         for sock in wlist:
             try:
                 message = self.message_queues[sock]()
@@ -55,6 +69,9 @@ class Reactor:
                 message_bytes = message.get_buffer_from_message()
                 sock.sendall(message_bytes)
             except Queue.Empty:
+                if self.client_timeouts[sock][0]():
+                    keep_alive_msg_bytes = self.client_timeouts[sock][1]()
+                    sock.sendall(keep_alive_msg_bytes)
                 # logging.info('No messages in queue')
                 pass
 
