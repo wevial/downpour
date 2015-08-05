@@ -18,6 +18,7 @@ class Reactor:
         self.readers = {}
         self.message_queues = {}
         self.client_timeouts = {}
+        self.peer_timeouts = {}
         self.sockets = []
 
     def add_peer_socket(self, peer):
@@ -26,7 +27,10 @@ class Reactor:
         self.register_message_queue(peer.socket, peer.get_from_message_queue)
         self.register_client_timeout(peer.socket, peer.check_if_client_will_time_out, peer.send_keep_alive)
         # TODO: destroy peer if it has timed out
-        # self.register_peer_timeout(peer.socket, peer.check_is_still_alive)
+        self.register_peer_timeout(peer.socket, peer.check_is_still_alive, peer.destroy_peer)
+
+    def register_peer_timeout(self, socket, check_alive, destroy_peer):
+        self.peer_timeouts[socket] = (check_alive, destroy_peer)
 
     def register_client_timeout(self, socket, check_alive, keep_alive):
         self.client_timeouts[socket] = (check_alive, keep_alive)
@@ -45,23 +49,15 @@ class Reactor:
     def read_write_live_sockets(self):
         socks = self.sockets
         #TODO: only look for socks to write to if there are messages in queue
-
         rlist, wlist, _ = select.select(socks, socks, socks)
         for sock in rlist:
             data = self.read_all(sock)
-            self.client_timeouts[sock]
+            self.check_for_client_time_out(sock)
             if data:
                 self.readers[sock](data)
-            elif self.client_timeouts[sock][0]():
-                # Bypass message queue to send keep alive message
-                keep_alive_msg_bytes = self.client_timeouts[sock][1]()
-                sock.sendall(keep_alive_msg_bytes)
             else:
-                # TODO: Destroy peer
-                socks.remove(sock)
-                del self.readers[sock]
-                del self.message_queues[sock]
-                del self.client_timeouts[sock]
+                # Check if peer has timedout
+                self.check_for_peer_time_out(sock) # Kills peer
         for sock in wlist:
             try:
                 message = self.message_queues[sock]()
@@ -69,11 +65,22 @@ class Reactor:
                 message_bytes = message.get_buffer_from_message()
                 sock.sendall(message_bytes)
             except Queue.Empty:
-                if self.client_timeouts[sock][0]():
-                    keep_alive_msg_bytes = self.client_timeouts[sock][1]()
-                    sock.sendall(keep_alive_msg_bytes)
-                # logging.info('No messages in queue')
-                pass
+                self.check_for_client_time_out(sock)
+
+    def check_for_client_time_out(self, socket):
+        if self.client_timeouts[socket][0]():
+            keep_alive_msg_bytes = self.client_timeouts[socket][1]()
+            socket.sendall(keep_alive_msg_bytes)
+
+    def check_for_peer_time_out(self, socket):
+        # TODO: Destroy peer
+        if self.peer_timeouts[socket][0]():
+            self.peer_timeouts[socket][1]()
+            self.sockets.remove(socket)
+            del self.readers[socket]
+            del self.message_queues[socket]
+            del self.client_timeouts[socket]
+            del self.peer_timeouts[socket]
 
     @staticmethod
     def read_all(socket):
@@ -89,3 +96,5 @@ class Reactor:
         except IOError as e:
             logging.warning('Error %s', e)
         return data
+        # TODO: destroy peer if it has timed out
+        # self.register_peer_timeout(peer.socket, peer.check_is_still_alive)

@@ -150,6 +150,10 @@ class Peer:
         self.is_alive = time_elapsed < 120  # Timeout timer set at 2 mins
         return self.is_alive
 
+    def destroy_peer(self):
+        logging.info('Peer %s is now DEAD', self)
+        self.is_alive = False
+
     def peer_starts_choking_client(self):
         self.peer_is_choing_client = True
 
