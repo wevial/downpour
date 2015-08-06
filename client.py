@@ -36,13 +36,27 @@ class Client(object):
         metainfo = B.bdecode(f.read())
         data = metainfo['info']  # Un-bencoded dictionary
         self.info_hash = H.sha1(B.bencode(data)).digest()
-        self.file_length = data['length']
-        self.piece_length = data['piece length']
         self.announce_url = metainfo['announce']
-        self.file_name = data['name']
+        self.file_name = data['name'] # Dir name if multi, otherwise file name
+        self.piece_length = data['piece length']
+        if 'files' in metainfo: # Multifile torrent
+            self.setup_multi_file_info(data)
+        else:
+            self.setup_single_file_info(data)
         self.setup_download_directory()
         self.check_if_dload_file_exists()
         self.setup_pieces(self.piece_length, data['pieces'])
+
+    def setup_multi_file_info(self, metainfo):
+        self.is_multi_file = True
+        self.files = metainfo['files'] # dictionary of file lengths + paths
+        self.file_length = 0 # file_length = total # bytes to dload
+        for f in self.files:
+            file_length += f['length']
+
+    def setup_single_file_info(self, metainfo):
+        self.is_multi_file = False
+        self.file_length = metainfo['length']
 
     def build_handshake(self):
         logging.info('Building handshake')
@@ -204,6 +218,7 @@ class Client(object):
 
     def stitch_files(self):
         logging.info('Wrote all pieces, stitching them together')
+#        stitcher = Stitcher(self.is_multifile, self.num_pieces)
         stitcher = Stitcher(self.file_name, self.num_pieces, self.dload_dir)
         stitcher.stitch_tmp_files()
         logging.info('Stitching completed.')
