@@ -1,4 +1,5 @@
 import os
+import logging
 
 class Stitcher:
     def __init__(self, client):
@@ -69,8 +70,15 @@ class Stitcher:
     
     def stitch_single_file(self):
         logging.info('Renaming temp file to final, single file name')
-        os.rename(self.write_file, self.name)
+        logging.info('PATH: %s, NAME: %s', self.dload_dir, self.path)
+        os.rename(os.path.join(self.dload_dir, 'torrtemp'), self.path)
 
     def stitch_multi_files(self):
-        # TODO: split write file into multiple files
-        pass
+        byte_counter = 0
+        for file_dict in self.files():
+            logging.info('Writing %s', '/'.join(file_dict['path']))
+            write_file = open(file_dict['write_file'], 'ab')
+            file_length = file_dict['length']
+            self.write_file.seek(byte_counter)
+            write_file.write(self.write_file.read(file_length))
+            byte_count += file_length

@@ -65,7 +65,7 @@ class Peer:
     def connect(self):
         logging.debug('Attempting to connect to peer %s', self)
         try:
-            self.socket.settimeout(10.0)
+            self.socket.settimeout(5.0)
             self.socket.connect((self.ip, self.port))
         except Exception as e:
             logging.info('Failed to connect to peer %s', self)

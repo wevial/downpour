@@ -51,8 +51,8 @@ class Client(object):
         self.is_multi_file = True
         self.files = metainfo['files'] # dictionary of file lengths + paths
         self.file_length = 0 # file_length = total # bytes to dload
-        for f in self.files:
-            file_length += f['length']
+        for file_dict in self.files:
+            file_length += file_dict['length']
 
     def setup_single_file_info(self, metainfo):
         self.is_multi_file = False
@@ -97,9 +97,9 @@ class Client(object):
                     if not self.reactor_activated:
                         self.activate_reactor()
                         self.reactor_activated = True
-            except Exception as e:
-                logging.debug('Error %s connecting to peer %s. [In construct_peers]', e, peer)
-        logging.debug('LOL')
+            except IOError as e:
+                logging.warning('Error in construct_peers! %s', e)
+
 
     def get_self_ip(self):
         # http://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib/166520#166520
@@ -219,6 +219,6 @@ class Client(object):
     def stitch_files(self):
         logging.info('Wrote all pieces, stitching them together')
 #        stitcher = Stitcher(self.is_multifile, self.num_pieces)
-        stitcher = Stitcher(self.file_name, self.num_pieces, self.dload_dir)
-        stitcher.stitch_tmp_files()
+        stitcher = Stitcher(self)
+        stitcher.stitch()
         logging.info('Stitching completed.')
