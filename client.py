@@ -29,6 +29,7 @@ class Client(object):
         self.decode_torrent_and_setup_pieces()
         self.handshake = self.build_handshake()
         self.setup_tracker()
+        self.stitcher = Stitcher(self)
         self.setup_peers()
 
     def decode_torrent_and_setup_pieces(self):
@@ -36,10 +37,11 @@ class Client(object):
         metainfo = B.bdecode(f.read())
         data = metainfo['info']  # Un-bencoded dictionary
         self.info_hash = H.sha1(B.bencode(data)).digest()
-        self.announce_url = metainfo['announce']
+        self.announce_url = self.find_http_announce_url(metainfo)
+        #self.announce_url = 'http://tracker.ccc.de:6969/announce'
         self.file_name = data['name'] # Dir name if multi, otherwise file name
         self.piece_length = data['piece length']
-        if 'files' in metainfo: # Multifile torrent
+        if 'files' in data: # Multifile torrent
             self.setup_multi_file_info(data)
         else:
             self.setup_single_file_info(data)
@@ -47,12 +49,27 @@ class Client(object):
         self.check_if_dload_file_exists()
         self.setup_pieces(self.piece_length, data['pieces'])
 
+    def find_http_announce_url(self, metainfo):
+        print metainfo.keys()
+#        print metainfo['announce-list']
+
+        if self.is_http_url(metainfo['announce']):
+            return metainfo['announce']
+        elif 'announce-list' in metainfo.keys():
+            for url in metainfo['announce-list']:
+                url = url[0]
+                if self.is_http_url(url):
+                    print url
+                    return url
+        raise SystemExit('UDP announce urls are not supported. Currently only HTTP is supported.')
+
+    def is_http_url(self, url):
+        return 'http://' in url
+
     def setup_multi_file_info(self, metainfo):
         self.is_multi_file = True
         self.files = metainfo['files'] # dictionary of file lengths + paths
-        self.file_length = 0 # file_length = total # bytes to dload
-        for file_dict in self.files:
-            file_length += file_dict['length']
+        self.file_length = sum([file_dict['length'] for file_dict in self.files]) # file_length = total # bytes to dload
 
     def setup_single_file_info(self, metainfo):
         self.is_multi_file = False

@@ -54,6 +54,7 @@ class Stitcher:
             logging.info('Created empty file @ %s', inner_path)
             
     def stitch(self):
+        logging.info('stitching tmp files')
         self.stitch_tmp_files()
         if self.is_multi_file:
             self.stitch_multi_files()
