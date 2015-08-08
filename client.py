@@ -205,7 +205,7 @@ class Client(object):
                         logging.warning('Why is there a piece with no blocks?')
 
     def add_peer_to_piece_peer_list(self, piece_index, peer):
-        print 'Adding piece', piece_index, 'to peer', peer
+        # print 'Adding piece', piece_index, 'to peer', peer
         self.pieces[piece_index].add_peer_to_peer_list(peer)
 
     def get_next_block(self, piece_index):
@@ -234,8 +234,8 @@ class Client(object):
         sys.exit()
 
     def stitch_files(self):
+        print 'stitching...'
         logging.info('Wrote all pieces, stitching them together')
 #        stitcher = Stitcher(self.is_multifile, self.num_pieces)
-        stitcher = Stitcher(self)
-        stitcher.stitch()
+        self.stitcher.stitch()
         logging.info('Stitching completed.')

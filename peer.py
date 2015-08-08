@@ -134,7 +134,7 @@ class Peer:
             getting timedout. If its been over 60 seconds, send a keep alive
             message to peer. """
         current_time = time.time()
-        return current_time - self.time_last_msg_sent > 60
+        return (current_time - self.time_last_msg_sent) > 60.0
 
     def send_keep_alive(self):
         logging.info('Sending keep alive message to %s', self)

@@ -39,7 +39,7 @@ class Piece(object):
         return self.blocks_requested < self.num_blocks
 
     def add_peer_to_peer_list(self, peer):
-        print 'peer ', peer, ' has piece ', self.index
+#        print 'peer ', peer, ' has piece ', self.index
         self.peers.append(peer)
 
     def check_info_hash(self):
