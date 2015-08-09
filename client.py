@@ -2,6 +2,7 @@ import hashlib as H
 import bencode as B
 import struct
 import logging
+import random
 
 logging.basicConfig(filename='example.log', filemode='w', level=logging.DEBUG)
 
@@ -11,17 +12,21 @@ import os, sys
 from bitstring import BitArray
 from tracker import Tracker
 from piece import Piece
+
 from stitcher import Stitcher
 from reactor import Reactor
 from peer import Peer
+from piece_queue import PieceQueue
 
 TEST_TORRENT = 'flagfromserverorig.torrent'
 BLOCK_LENGTH = 2 ** 14
+PIECE_THRESHOLD = 5
 
 
 class Client(object):
     def __init__(self, torrent):
         self.torrent = torrent
+        self.torrent_state = 'random'
         self.reactor = Reactor()
         self.reactor_activated = False
         self.peer_id = '-TZ-0000-00000000000'
@@ -64,9 +69,9 @@ class Client(object):
 
     def setup_peers(self):
         peer_ips = self.tracker.send_request_and_parse_response()
-        self.construct_peers(peer_ips)
+        self.connect_to_peers(peer_ips)
 
-    def construct_peers(self, peer_tuples):
+    def connect_to_peers(self, peer_tuples):
         peers = [Peer(ip, port, self) for ip, port in peer_tuples]
         logging.debug('Attempting to connect to peers %s', peer_tuples)
         for i, peer in enumerate(peers):
@@ -83,9 +88,12 @@ class Client(object):
                     if not self.reactor_activated:
                         self.activate_reactor()
                         self.reactor_activated = True
-            except Exception as e:
-                logging.debug('Error %s connecting to peer %s. [In construct_peers]', e, peer)
-        logging.debug('LOL')
+                        logging.info('About to start piece requesting')
+            except IOError as e:
+                logging.warning('%s', e)
+        self.manage_requests(5)
+            # except Exception as e:
+                # logging.debug('Error %s connecting to peer %s. [In construct_peers]', e, peer)
 
     def get_self_ip(self):
         # http://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib/166520#166520
@@ -121,17 +129,17 @@ class Client(object):
         logging.info('setting up pieces for file length, %s',  length)
         pieces = []
         self.num_pieces = len(hash_list)
-        # assert self.num_pieces == self.raw_hashes / 20
-        # Raw hashes is always multiple of 20
         logging.info('dividing up file into %s pieces', self.num_pieces)
         self.bitfield = BitArray(self.num_pieces)
         last_piece_length = self.file_length - (self.num_pieces - 1) * length
         for i in range(self.num_pieces):
             if i == self.num_pieces - 1:
-                logging.info('Setting up last piece, length: %s', last_piece_length)
                 length = last_piece_length
-            pieces.append(Piece(i, length, hash_list[i], self.dload_dir))
+            pieces.append(Piece(self, i, length, hash_list[i], self.dload_dir))
+            logging.info('Created piece index %s length %s', i, length)
         self.pieces = pieces
+        self.piece_queue = PieceQueue(pieces)
+        logging.info('Created piece queue length %s', len(self.piece_queue.pieces))
 
     def setup_download_directory(self):
         dir_name = self.torrent
@@ -151,42 +159,62 @@ class Client(object):
             raise SystemExit('This file has already been downloaded.')
             # Do something to cancel the rest of the setup
 
+    def add_piece_to_queue(self, piece):
+        self.piece_queue.put(piece)
+
     def add_piece_to_bitfield(self, index):
         if not self.bitfield[index]:
             self.bitfield.invert(index)
+            self.manage_requests()
         else:
             logging.warning('Should never get save same piece more than once!')
-
-    # TODO implement real strategies :)
-    def start_pieces_in_order_strategy(self):
-        for piece_id, do_i_have in enumerate(self.bitfield):
-            if not do_i_have:
-                # TODO fix formatting here, it's ugly
-                piece = self.pieces[piece_id]
-                logging.info('getting piece %s', piece)
-                while piece.not_all_blocks_requested():
-                    block_i_want, peer = piece.get_next_block_and_peer_to_request()
-                    block_message = message.RequestMsg(block_i_want)
-                    logging.info('queueing up message for block %s', block_i_want)
-                    if peer:
-                        peer.add_to_message_queue(block_message)
-                    else:
-                        logging.warning('Why is there a piece with no blocks?')
 
     def add_peer_to_piece_peer_list(self, piece_index, peer):
         print 'Adding piece', piece_index, 'to peer', peer
         self.pieces[piece_index].add_peer_to_peer_list(peer)
 
-    def get_next_block(self, piece_index):
-        self.pieces[piece_index].get_next_block_and_peer_to_request()
+    def manage_requests(self, num_pieces=1):
+        logging.info('Sending more piece requests')
+        logging.info('Piece queue has %s pieces', self.piece_queue.length())
+        if not self.piece_queue.empty():
+            self.manage_piece_queue_state();
+            for i in xrange(num_pieces):
+                self.request_next_piece();
+            logging.info('Cleaning up piece queue')
+        else:
+            pass
+
+    def manage_piece_queue_state(self):
+        # This should probably only get called occasionally
+        logging.debug('Have received %s pieces, need %s more', self.bitfield.count(1), self.bitfield.count(0))
+        if self.bitfield.count(1) > PIECE_THRESHOLD and self.piece_queue.length() > PIECE_THRESHOLD:
+            self.piece_queue.update_piece_order()
+            self.piece_queue.update_state('rarest_first')
+        elif self.piece_queue.length() <= PIECE_THRESHOLD:
+            logging.info('Switching to random state')
+            self.piece_queue.update_state('random')
+        self.request_next_piece()
+
+    # DISPATCHES TO PIECE
+    def request_next_piece(self):
+        next_piece = self.piece_queue.get_next_piece()
+        logging.info('Requesting piece %s', next_piece)
+        if next_piece:
+            try:
+                next_piece.request_all_blocks()
+            except IndexError as e:
+                self.piece_queue.put(next_piece)
+                logging.error(e)
 
     def write_block_to_file(self, block_info, block):
         (piece_index, begin, block_length) = block_info
+        logging.info('Writing block of length %s at index %s for piece %',
+                block_length, begin, piece_index)
         piece = self.pieces[piece_index]
+        logging.info('Piece has index %s', piece.index)
         piece.add_block(begin, block)
         self.tracker.update_download_stats(block_length)
-        if piece_index == self.num_pieces - 1:
-            # THIS ONLY WORKS FOR NAIVE IN-ORDER IMPLEMENTATION
+        if self.num_pieces - self.bitfield.count(1) == 0:
             self.finalize_download()
     
     def finalize_download(self):
