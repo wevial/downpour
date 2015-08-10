@@ -62,8 +62,8 @@ class Stitcher:
         logging.info('stitching tmp files')
         for i in range(self.num_pieces):
             piece_file_path = os.path.join(self.dload_dir, str(i))
-            piece_file = open(piece_file_path, 'rb')
-            self.write_file.write(piece_file.read())
+            with open(piece_file_path, 'rb') as piece_file:
+                self.write_file.write(piece_file.read())
             os.remove(piece_file_path)
         self.write_file.close()
         self.write_file = open(self.tmp_file_path, 'rb')
@@ -77,10 +77,11 @@ class Stitcher:
         logging.info('stitching Multi files')
         byte_count = 0
         for file_dict in self.files:
-            logging.info('Writing %s', '/'.join(file_dict['path']))
-            write_file = open(os.path.join(self.main_dload_dir, '/'.join(file_dict['path'])), 'ab')
+            file_path = '/'.join(file_dict['path'])
             file_length = file_dict['length']
-            self.write_file.seek(byte_count)
-            write_file.write(self.write_file.read(file_length))
-            byte_count += file_length
+            logging.info('Writing %s', file_path)
+            with open(os.path.join(self.main_dload_dir, file_path), 'ab') as write_file:
+                self.write_file.seek(byte_count)
+                write_file.write(self.write_file.read(file_length))
+                byte_count += file_length
         os.remove(self.tmp_file_path)
