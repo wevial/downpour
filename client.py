@@ -216,7 +216,6 @@ class Client(object):
         if self.bitfield.count(1) > PIECE_THRESHOLD and self.piece_queue.length() > PIECE_THRESHOLD:
             self.piece_queue.update_piece_order()
             self.torrent_state = 'rarest_first'
-        self.request_next_piece()
 
     # DISPATCHES TO PIECE
     def request_block(self, block_info):
