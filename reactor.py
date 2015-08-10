@@ -26,7 +26,6 @@ class Reactor:
         self.register_reader(peer.socket, peer.process_and_act_on_incoming_data)
         self.register_message_queue(peer.socket, peer.get_from_message_queue)
         self.register_client_timeout(peer.socket, peer.check_if_client_will_time_out, peer.send_keep_alive)
-        # TODO: destroy peer if it has timed out
         self.register_peer_timeout(peer.socket, peer.check_is_still_alive, peer.destroy_peer)
 
     def register_peer_timeout(self, socket, check_alive, destroy_peer):

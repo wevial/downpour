@@ -6,8 +6,11 @@ from message import *
 import Queue
 import logging
 
+REQUESTS_PER_PEER = 5
+
 
 class Peer:
+
     def __init__(self, ip, port, client):
         self.ip = ip
         self.port = port
@@ -21,14 +24,20 @@ class Peer:
         self.time_last_msg_sent = 0.0
         self.is_alive = False
         self.client = client
-        self.num_pieces = client.num_pieces
-        self.bitfield = BitArray(length=self.num_pieces)
+        self.bitfield = BitArray(length=client.num_pieces)
         self.msg_queue = Queue.Queue()
+        self.outstanding_requests = []
+        self.request_q = [] 
 
     def __repr__(self):
         return str((self.ip, self.port))
 
-    # WRAPPER METHODS FOR SOCKET
+    # This feels kind of cheap...
+    def __cmp__(self, other):
+        return len(self.request_q) - len(other.request_q) 
+
+    # WRAPPER METHODS FOR SOCKET - these are only necessary bc of handshake
+    # TODO: refactor handshake into reactor
     def close(self):
         self.socket.close()
 
@@ -50,17 +59,9 @@ class Peer:
                 pass
         return data
 
-    # TODO: Set up message queue to maximize bytes per trip over the servers.
-    # this function is not used
     def send_message(self, message):
         bytes_to_send = Msg.get_buffer_from_message(message)
         self.sendall(bytes_to_send)
-
-    def verify_handshake(self, handshake, info_hash):
-        # lenpstr - pstr - reserved - info hash - peer id
-        (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
-        self.peer_id = peer_id
-        return peer_hash == info_hash
 
     def connect(self):
         logging.debug('Attempting to connect to peer %s', self)
@@ -86,6 +87,12 @@ class Peer:
         else:
             logging.debug('Returning peer handshake')
             return peer_handshake
+
+    def verify_handshake(self, handshake, info_hash):
+        # lenpstr - pstr - reserved - info hash - peer id
+        (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
+        self.peer_id = peer_id
+        return peer_hash == info_hash
 
     # TODO: Clean up handling of block messages here to ONLY send block bytes
     def process_and_act_on_incoming_data(self, data):
@@ -113,7 +120,6 @@ class Peer:
             }
 
         for msg in messages:
-            # Call message handler with arguments from message
             (message_action, message_params) = message_actions[msg.msg_id]
             message_args = [getattr(msg, param) for param in message_params]
             message_action(*message_args)
@@ -142,25 +148,37 @@ class Peer:
 
     # Upon message id -1
     def keep_alive(self):
-        self.time_last_msg = time.time()
+        self.time_last_msg_received = time.time()
         self.is_alive = True
 
     def check_is_still_alive(self):
-        time_elapsed = time.time() - self.time_last_msg
+        time_elapsed = time.time() - self.time_last_msg_received
         self.is_alive = time_elapsed < 120  # Timeout timer set at 2 mins
         return self.is_alive
 
     def destroy_peer(self):
         logging.info('Peer %s is now DEAD', self)
+        for block_info in self.outstanding_requests:
+            self.outstanding_requests.remove(block_info)
+            self.client.request_block(block_info)
+        for block_info in self.request_q:
+            self.request_q.remove(block_info)
+            self.client.request_block(block_info)
         self.is_alive = False
 
     def peer_starts_choking_client(self):
-        self.peer_is_choing_client = True
+        self.peer_is_choking_client = True
+        # TODO: Add check for choked status before sending new requests
 
     def peer_stops_choking_client(self):
         self.peer_is_choking_client = False
         if self.am_interested:
-            self.client.start_pieces_in_order_strategy()
+            logging.info('Peer unchoked, sending requests now')
+            if len(self.request_q) > 0:
+                self.flush_request_queue()
+            else:
+                # TODO: Trace code path here
+                self.client.manage_requests(REQUESTS_PER_PEER)
 
     def peer_is_now_interested(self):
         self.peer_is_interested = True
@@ -170,17 +188,19 @@ class Peer:
 
     def peer_is_no_longer_interested(self):
         self.peer_is_interested = False
+        # TODO: Update request q based on this information
 
     # When receiving bitfield
     def setup_bitfield(self, bitfield_buf):
         # TODO implement non-naive function for updating interested status
-        self.am_interested = True
-        self.add_to_message_queue(InterestedMsg())
         bitfield = BitArray(bytes=bitfield_buf)
         self.bitfield = bitfield
         for piece_index, bit in enumerate(bitfield):
             if bit:
                 self.client.add_peer_to_piece_peer_list(piece_index, self)
+        self.am_interested = True
+        self.add_to_message_queue(InterestedMsg())
+        self.client.manage_requests(1)
 
     # When receiving have message
     def update_bitfield(self, piece_index):
@@ -198,19 +218,49 @@ class Peer:
 
     # After block message
     def update_and_store_block(self, block_info, block):
+        self.outstanding_requests.remove(block_info)
+        self.flush_request_queue()
         logging.debug('Storing block length %s beginning at index %s for piece %s',
                 block_info[2], block_info[1], block_info[0])
         logging.debug('Actual length of block: %s', len(block))
+        if self.client.torrent_state == 'endgame':
+            piece = self.client.pieces[block_info[0]]
+            piece.cancel_block(block_info, self)
         self.client.write_block_to_file(block_info, block)
 
     # After cancel message
-    # TODO
     def clear_requests(self, block_info):
-        logging.info('clear them all')
+        pass
+
+    def add_request_to_queue(self, block_info):
+        if not self.peer_is_choking_client and \
+        len(self.outstanding_requests) < REQUESTS_PER_PEER:
+            self.send_request_message(block_info)
+        else:
+            logging.info('Adding block %s to request q', block_info)
+            self.request_q.insert(0, block_info)
+
+    def send_cancel_message(self, block_info):
+        self.add_to_message_queue(CancelMsg(block_info))
+
+    def send_request_message(self, block_info):
+        self.outstanding_requests.append(block_info)
+        logging.info('Sending request for block %s', block_info)
+        self.add_to_message_queue(RequestMsg(block_info))
+
+    def flush_request_queue(self):
+        '''Move requests from holding queue to reactor message queue'''
+        logging.info('Can flush up to %s requests', REQUESTS_PER_PEER - len(self.outstanding_requests))
+        logging.info('Request q has %s blocks', len(self.request_q))
+        while len(self.outstanding_requests) < REQUESTS_PER_PEER and \
+            len(self.request_q) > 0:
+            next_block_info = self.request_q.pop()
+            logging.info('popped block %s off request q', next_block_info)
+            self.send_request_message(next_block_info)
 
     # MESSAGE QUEUE
     def add_to_message_queue(self, msg):
-        logging.info('adding message %s to queue.', msg)
+        logging.info('adding message %s to queue', msg)
         self.msg_queue.put(msg)
         # TODO: Make time last msg sent update when its sent, not added to queue
         self.update_time_last_msg_sent()
