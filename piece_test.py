@@ -1,9 +1,16 @@
 import unittest
 import hashlib
+<<<<<<< HEAD
 import os
 from mock import MagicMock, patch
 from StringIO import StringIO
 from testfixtures import TempDirectory
+=======
+from mock import MagicMock
+from StringIO import StringIO
+
+from piece import Piece
+>>>>>>> piece_infohash
 
 from piece import Piece
 from piece_queue import PieceQueue
@@ -28,6 +35,11 @@ class TestPieceInitialization(unittest.TestCase):
         self.assertTrue(piece.not_all_blocks_requested()) 
         block = piece.get_next_block()
         self.assertEqual(block[2], 2)
+        (block_info, peer) = piece.get_next_block_and_peer_to_request()
+        self.assertEqual(peer, None)
+        self.assertEqual(block_info[0], 1)
+        self.assertEqual(block_info[1], 0)
+        self.assertEqual(block_info[2], 2**14)
         self.assertFalse(piece.not_all_blocks_requested())
 
     def test_piece_two_blocks(self):
@@ -129,5 +141,35 @@ class TestPieceQueue(unittest.TestCase):
             test_piece = piece_queue.get_next_random()
             self.assertEqual(test_piece.index, pieces[test_piece.index].index)
 
+
+    def test_piece_info_hash_two_blocks(self):
+        test_bytes = '\x00\x01\x02'
+        empty_block = '\x00' * 2**14
+        test_hash = hashlib.sha1(empty_block + test_bytes).digest()
+        piece = Piece(1, 2**14 + 3, test_hash)
+        piece.write_file = StringIO()
+        self.assertEqual(piece.num_blocks, 2)
+        self.assertFalse(piece.check_if_finished())
+        piece.add_block(0, empty_block)
+        self.assertFalse(piece.check_if_finished())
+        piece.add_block(2**14, test_bytes)
+        self.assertTrue(piece.check_if_finished())
+        self.assertTrue(piece.check_info_hash())
+
+    def test_piece_info_hash_out_of_order(self):
+        test_bytes = '\x00\x01\x02'
+        empty_block = '\x00' * 2**14
+        test_hash = hashlib.sha1(empty_block + test_bytes).digest()
+        piece = Piece(1, 2**14 + 3, test_hash)
+        piece.write_file = StringIO()
+        self.assertEqual(piece.num_blocks, 2)
+        self.assertFalse(piece.check_if_finished())
+        piece.add_block(2**14, test_bytes)
+        self.assertFalse(piece.check_if_finished())
+        piece.add_block(0, empty_block)
+        self.assertTrue(piece.check_if_finished())
+        self.assertTrue(piece.check_info_hash())
+        
+>>>>>>> piece_infohash
 if __name__ == '__main__':
     unittest.main()

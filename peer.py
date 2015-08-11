@@ -41,6 +41,16 @@ class Peer:
     def close(self):
         self.socket.close()
 
+    def connect(self):
+        logging.debug('Attempting to connect to peer %s', self)
+        try:
+            self.socket.connect((self.ip, self.port))
+        except Exception as e:
+            logging.info('Failed to connect to peer %s', self)
+            raise e
+        else:
+            logging.debug('You have connected to peer %s', self)
+
     def sendall(self, msg_bytes):
         self.socket.sendall(msg_bytes)
 
@@ -95,14 +105,15 @@ class Peer:
         return peer_hash == info_hash
 
     # TODO: Clean up handling of block messages here to ONLY send block bytes
+
     def process_and_act_on_incoming_data(self, data):
         (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
         logging.debug('Converting %s bytes from buffer and %s bytes from reactor',
                        len(self.buf), len(data))
-        logging.debug('After extracting messages, %s bytes remain', len(buf_remainder))
         self.act_on_messages(messages)
         self.update_buffer(buf_remainder)
-        logging.debug('Now %s bytes remain in buffer', len(self.buf))
+    
+    # TODO: Set up message queue to maximize bytes per trip over the servers.
 
     def act_on_messages(self, messages):
         message_actions = {
@@ -226,7 +237,7 @@ class Peer:
         if self.client.torrent_state == 'endgame':
             piece = self.client.pieces[block_info[0]]
             piece.cancel_block(block_info, self)
-        self.client.write_block_to_file(block_info, block)
+        self.client.add_block(block_info, block)
 
     # After cancel message
     def clear_requests(self, block_info):

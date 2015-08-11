@@ -232,7 +232,7 @@ class Client(object):
                 self.piece_queue.put(next_piece)
                 logging.error(e)
 
-    def write_block_to_file(self, block_info, block):
+    def add_block(self, block_info, block):
         (piece_index, begin, block_length) = block_info
         logging.info('Writing block of length %s at index %s for piece %',
                 block_length, begin, piece_index)
@@ -261,3 +261,23 @@ class Client(object):
         logging.info('Wrote all pieces, stitching them together')
         self.stitcher.stitch()
         logging.info('Stitching completed.')
+        piece.add_block(begin, block)
+        if piece.check_if_finished():
+            self.finalize_piece(piece)
+        if piece_index == self.num_pieces - 1:
+            self.put_pieces_together()
+
+    def finalize_piece(self, piece):
+        if piece.check_info_hash():
+            logging.debug('Yay! Correct info hash!')
+            self.add_piece_to_bitfield(piece_index)
+        else:
+            logging.debug('Incorrect infohash, starting over with piece %s', piece_index)
+            piece.reset()
+            # TODO: Update requests queue?
+
+    def put_pieces_together(self):
+        logging.info('Wrote all pieces, stitching them together')
+        stitcher = Stitcher(self.file_name, self.num_pieces)
+        stitcher.stitch_files()
+        logging.info('stitching complete')

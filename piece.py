@@ -1,4 +1,5 @@
 from __future__ import division
+<<<<<<< HEAD
 import hashlib as H
 import random
 import os
@@ -8,6 +9,15 @@ import math
 
 BLOCK_LENGTH = 2 ** 14
 MAX_REQUEUSTS = 10
+=======
+BLOCK_LENGTH = 2 ** 14
+import random
+import os
+import logging
+import hashlib
+import math
+
+>>>>>>> piece_infohash
 
 
 class Piece(object):
@@ -139,6 +149,17 @@ class Piece(object):
         self.blocks_requested = 0
         self.create_write_file()
 
+    def check_info_hash(self):
+        self.write_file.seek(0)
+        file_bytes = self.write_file.read()
+        computed_hash = hashlib.sha1(file_bytes).digest()
+        return computed_hash == self.piece_hash
+
+    def reset(self):
+        self.blocks_received = 0
+        self.blocks_requested = 0
+        self.make_write_file()
+
     def check_if_finished(self):
         return self.blocks_received == self.num_blocks
 
@@ -150,27 +171,12 @@ class Piece(object):
         self.write_file.seek(begin)
         self.write_file.write(block)
 
+    # Exposed method
     def add_block(self, begin, block):
         self.update_block_count()
         self.write_block_to_file(begin, block)
         if self.check_if_finished():
             self.save_or_delete()
 
-    # Exposed method
-    def get_next_block_and_peer_to_request(self):
-        logging.debug('Getting block %s of %s.', self.blocks_requested, self.num_blocks)
-        begin = self.blocks_requested * BLOCK_LENGTH
-        if self.blocks_requested == self.num_blocks - 1:
-            length = self.length - self.blocks_requested * BLOCK_LENGTH
-            # TODO: Why is this getting printed for all blocks?
-            logging.info('Calculating length of last block: %s', length)
-        else:
-            length = BLOCK_LENGTH # This is another repetitive assignment
-        self.blocks_requested += 1
-        block_info = (self.index, begin, length)
-        if len(self.peers):
-            peer = random.choice(self.peers)
-        else:
-            peer = None
-            self.client.add_piece_to_queue(self)
-        return (block_info, peer)
+    def not_all_blocks_requested(self):
+        return self.blocks_requested < self.num_blocks
