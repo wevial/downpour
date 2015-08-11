@@ -7,6 +7,7 @@ import message
 import math
 
 BLOCK_LENGTH = 2 ** 14
+MAX_REQUEUSTS = 10
 
 
 class Piece(object):
@@ -55,43 +56,44 @@ class Piece(object):
     def update_blocks_received(self):
         self.blocks_received += 1
 
+    # EXPOSED METHOD: Called by client, dispatches to peer
     def cancel_block(self, block_info, peer_received_from):
         for peer in self.peers:
             if peer is not peer_received_from:
                 peer.send_cancel_message(block_info)
 
-    # TODO: Refactor these three semi-redundant methods
+    def request_block(self, block_info):
+        peer = self.get_available_peer()
+        peer.add_request_to_queue(block_info)
+
     def request_block_endgame(self, block_info):
         for peer in self.peers:
             peer.add_request_to_queue(block_info)
 
-    def request_block(self, block_info):
-        if self.has_no_peers():
-            raise IndexError('Piece has no peers yet. Wait to send requests')
-        peer = self.peers[0]
-        peer.add_request_to_queue(block_info)
-
     def request_all_blocks(self):
-        if self.has_no_peers():
-            raise IndexError('Piece has no peers yet. Wait to send requests')
-        self.peers.sort()  # Sorts by length of request queue
-        peer_block_count = 0
-        peer_index = 0
-        peer = self.peers[peer_index]
-        max_requests = max(10 - len(peer.request_q), 5)
         while self.not_all_blocks_requested():
-            block_info = self.get_next_block()
-            logging.info('queueing up message for block %s', block_info)
-            if peer_block_count < max_requests:
-                peer_block_count += 1
+            peer = self.get_available_peer()
+            if peer:
+                block_info = self.get_next_block()
+                peer.add_request_to_queue(block_info)
             else:
-                peer_index += 1
-                peer_block_count = 0
-                peer = self.peers[peer_index]
-            peer.add_request_to_queue(block_info)
+                logging.warning('No peers available for piece %s', self.index)
+                raise IndexError
 
-    # TODO: Refactor this, it could be cleaner
+    def get_available_peer(self):
+        # TODO: Duplicated (but not triplicated) code. May refactor
+        peer = self.peers[0]
+        if len(peer.request_q) < MAX_REQUEUSTS:
+            return peer
+        else:
+            peers.sort()
+            peer = self.peers[0]
+            if len(peer.request_q) < MAX_REQUESTS:
+                return peer
+
     def get_next_block(self):
+        if self.blocks_requested == self.num_blocks:
+            raise IndexError('All blocks requested')
         logging.debug( 'Getting block ', self.blocks_requested, ' of ', self.num_blocks)
         begin = self.blocks_requested * BLOCK_LENGTH
         if self.blocks_requested == self.num_blocks - 1:
