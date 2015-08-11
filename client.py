@@ -242,7 +242,7 @@ class Client(object):
         self.tracker.update_download_stats(block_length)
         if self.num_pieces - self.bitfield.count(1) == 0:
             self.finalize_download()
-    
+
     def finalize_download(self):
         logging.info('Finalizing download')
         if not self.tracker.is_download_complete():
@@ -261,11 +261,6 @@ class Client(object):
         logging.info('Wrote all pieces, stitching them together')
         self.stitcher.stitch()
         logging.info('Stitching completed.')
-        piece.add_block(begin, block)
-        if piece.check_if_finished():
-            self.finalize_piece(piece)
-        if piece_index == self.num_pieces - 1:
-            self.put_pieces_together()
 
     def finalize_piece(self, piece):
         if piece.check_info_hash():
@@ -275,9 +270,3 @@ class Client(object):
             logging.debug('Incorrect infohash, starting over with piece %s', piece_index)
             piece.reset()
             # TODO: Update requests queue?
-
-    def put_pieces_together(self):
-        logging.info('Wrote all pieces, stitching them together')
-        stitcher = Stitcher(self.file_name, self.num_pieces)
-        stitcher.stitch_files()
-        logging.info('stitching complete')
