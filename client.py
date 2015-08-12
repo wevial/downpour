@@ -234,7 +234,7 @@ class Client(object):
 
     def add_block(self, block_info, block):
         (piece_index, begin, block_length) = block_info
-        logging.info('Writing block of length %s at index %s for piece %',
+        logging.info('Writing block of length %s at index %s for piece %s',
                 block_length, begin, piece_index)
         piece = self.pieces[piece_index]
         logging.info('Piece has index %s', piece.index)
