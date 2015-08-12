@@ -226,7 +226,7 @@ class Peer:
         if self.client.torrent_state == 'endgame':
             piece = self.client.pieces[block_info[0]]
             piece.cancel_block(block_info, self)
-        self.client.write_block_to_file(block_info, block)
+        self.client.add_block(block_info, block)
 
     # After cancel message
     def clear_requests(self, block_info):

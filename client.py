@@ -21,7 +21,7 @@ from piece_queue import PieceQueue
 TEST_TORRENT = 'flagfromserverorig.torrent'
 BLOCK_LENGTH = 2 ** 14
 PIECE_THRESHOLD = 5
-
+ENDGAME_MAX_BLASTS = 2
 
 class Client(object):
     def __init__(self, torrent):
@@ -30,7 +30,7 @@ class Client(object):
         self.reactor = Reactor()
         self.reactor_activated = False
         self.peer_id = '-TZ-0000-00000000000'
-        self.peers = {}
+        self.peers = [] 
         self.decode_torrent_and_setup_pieces()
         self.handshake = self.build_handshake()
         self.setup_tracker()
@@ -105,7 +105,7 @@ class Client(object):
     def connect_to_peers(self, peer_tuples):
         peers = [Peer(ip, port, self) for ip, port in peer_tuples]
         logging.debug('Attempting to connect to peers %s', peer_tuples)
-        for i, peer in enumerate(peers):
+        for peer in peers:
             try:
                 if peer.ip == self.get_self_ip():
                     logging.info('Skipping peer; cannot connect to self')
@@ -115,7 +115,7 @@ class Client(object):
                 logging.debug('Handshake returned.')
                 if peer.verify_handshake(peer_handshake, self.info_hash):
                     logging.debug('Handshake verified. Adding peer to peer list')
-                    self.add_peer(i, peer)
+                    self.add_peer(peer)
                     if not self.reactor_activated:
                         self.activate_reactor()
                         self.reactor_activated = True
@@ -131,9 +131,9 @@ class Client(object):
         s.close()
         return ip
 
-    def add_peer(self, id_num, peer):
+    def add_peer(self, peer):
         logging.info('Adding peer %s to peer list (in add_peer)', peer)
-        self.peers[id_num] = peer
+        self.peers.append(peer)
         self.reactor.add_peer_socket(peer)
 
     def activate_reactor(self):
@@ -208,8 +208,29 @@ class Client(object):
                 self.request_next_piece();
             logging.info('Cleaning up piece queue')
         else:
+            # Count outstanding requests to decide when to go into endgame
             self.torrent_state = 'endgame'
+            self.start_endgame()
+
+    def start_endgame(self):
+        self.blasted_requests = []
+        for i in xrange(ENDGAME_MAX_BLASTS):
+            self.send_endgame_request()
             
+    def send_endgame_request(self):
+        block_info = self.select_outstanding_request()
+        if block_info:
+            self.blasted_requests.append(block_info)
+            self.pieces(block_info[0]).request_block_endgame(block_info)
+
+    def select_outstanding_request(self):
+        # TODO: Use filter instead of picking at random
+        peers_with_requests = filter(lambda peer: len(peer.outstanding_requests) > 0, self.peers)
+        if len(peers_with_requests):
+            peer = random.choice(peers_with_requests)
+            block_info = random.choice(peer.outstanding_requests)
+            return block_info
+
     def manage_piece_queue_state(self):
         # This should probably only get called occasionally
         logging.debug('Have received %s pieces, need %s more', self.bitfield.count(1), self.bitfield.count(0))
@@ -232,7 +253,7 @@ class Client(object):
                 self.piece_queue.put(next_piece)
                 logging.error(e)
 
-    def write_block_to_file(self, block_info, block):
+    def add_block(self, block_info, block):
         (piece_index, begin, block_length) = block_info
         logging.info('Writing block of length %s at index %s for piece %',
                 block_length, begin, piece_index)
@@ -240,9 +261,14 @@ class Client(object):
         logging.info('Piece has index %s', piece.index)
         piece.add_block(begin, block)
         self.tracker.update_download_stats(block_length)
+        if self.torrent_state == 'endgame' and block_info in self.blasted_requests:
+            piece = self.pieces[block_info[0]]
+            piece.cancel_block(block_info, self)
+            if self.bitfield.count(0) > 0:
+                self.send_endgame_request()
         if self.num_pieces - self.bitfield.count(1) == 0:
             self.finalize_download()
-    
+
     def finalize_download(self):
         logging.info('Finalizing download')
         if not self.tracker.is_download_complete():
@@ -250,7 +276,7 @@ class Client(object):
         self.stitch_files()
         self.tracker.send_completed_msg_to_tracker_server()
         logging.info('Shutting down connection with peers')
-        for peer in self.peers.itervalues():
+        for peer in self.peers:
             peer.close()
         print 'Quitting client'
         logging.info('Download completed. Quitting client.')
