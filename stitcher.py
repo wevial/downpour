@@ -49,7 +49,6 @@ class Stitcher:
         logging.info('Is multi file: %s', self.is_multi_file)
         logging.debug('Main_dload_dir %s', self.main_dload_dir)
         logging.debug('dload_dir %s', self.dload_dir)
-        #self.stitch_tmp_files()
         self.write_file = open(self.tmp_file_path, 'rb')
         if self.is_multi_file:
             logging.debug('It is multi file stitching')
@@ -58,17 +57,6 @@ class Stitcher:
             logging.debug('It is single file stitching')
             self.stitch_single_file()
 
-    def stitch_tmp_files(self):
-        """ Stitch temporary files into a single file. """
-        logging.info('stitching tmp files')
-        for i in range(self.num_pieces):
-            piece_file_path = os.path.join(self.dload_dir, str(i))
-            with open(piece_file_path, 'rb') as piece_file:
-                self.write_file.write(piece_file.read())
-            os.remove(piece_file_path)
-        self.write_file.close()
-        self.write_file = open(self.tmp_file_path, 'rb')
-    
     def stitch_single_file(self):
         logging.info('Renaming temp file to final, single file name')
         logging.info('PATH: %s, NAME: %s', self.dload_dir, self.single_file_path)

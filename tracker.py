@@ -53,7 +53,7 @@ class Tracker:
                 self.tracker_url = self.construct_tracker_url(announce_url)
                 self.send_request_and_parse_response()
                 return self.peers
-        logging.info('exiting for loop')
+        raise SystemExit('Failed to connect to any tracker server.')
     
     def parse_announce_url(self, announce_url):
         """ Get host url and port from announce_url """
@@ -75,7 +75,7 @@ class Tracker:
     def send_completed_msg_to_tracker_server(self):
         logging.info('Tell the tracker server that the download has completed')
         # tracker_url = self.construct_tracker_url(self.announce_url)
-        requests.get(url=self.tracker_url)
+#        requests.get(url=self.tracker_url)
         logging.info('Tracker response to completed download: %s')
                 
     def update_download_stats(self, num_bytes_dloaded):
@@ -111,7 +111,7 @@ class Tracker:
         peers = []
         # Try with just number of seeders rather than total peers if doesnt work?
         count = 0
-        while peers_to_unpack and count < 50:
+        while peers_to_unpack and count < 30:
             peer = peers_to_unpack[:6]
             peers_to_unpack = peers_to_unpack[6:]
             peers.append(self.unpack_udp_peer(peer))

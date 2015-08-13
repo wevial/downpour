@@ -41,17 +41,6 @@ class Peer:
     def close(self):
         self.socket.close()
 
-#    def connect(self):
-#        logging.debug('Attempting to connect to peer %s', self)
-#        try:
-#            self.socket.connect((self.ip, self.port))
-#        except Exception as e:
-#            logging.info('Failed to connect to peer %s', self)
-#            logging.debug('What e is: %s', e)
-#            raise e
-#        else:
-#            logging.debug('You have connected to peer %s', self)
-
     def sendall(self, msg_bytes):
         self.socket.sendall(msg_bytes)
 
@@ -71,7 +60,7 @@ class Peer:
                     logging.debug('Receiving data from peer timed out')
                     break
             except Exception as e:
-                logging.debug('Problem with handshake socket')
+                logging.debug('Problem with handshake socket: %s', e)
         return data
 
     def send_message(self, message):
@@ -80,12 +69,14 @@ class Peer:
 
     def connect(self):
         logging.debug('Attempting to connect to peer %s', self)
-        self.socket.settimeout(5)
-        try:
-            self.socket.connect((self.ip, self.port))
-            logging.debug('You have connected to peer %s', self)
-        except Exception as e:
-            logging.debug('WTF @ peer.connect() %s', e)
+        self.socket.settimeout(1)
+        self.socket.connect((self.ip, self.port))
+        logging.debug('You have connected to peer %s', self)
+        # try:
+        #     self.socket.connect((self.ip, self.port))
+        #     logging.debug('You have connected to peer %s', self)
+        # except Exception as e:
+        #     logging.debug('WTF @ peer.connect() %s', e)
         #try:
         #    self.socket.settimeout(5)
         #    self.socket.connect((self.ip, self.port))
@@ -116,9 +107,11 @@ class Peer:
     # TODO: Clean up handling of block messages here to ONLY send block bytes
 
     def process_and_act_on_incoming_data(self, data):
+        logging.debug('Length of incoming data to peer: %s', len(data))
         (messages, buf_remainder) = Msg.get_messages_from_buffer(self.buf + data)
         logging.debug('Converting %s bytes from buffer and %s bytes from reactor',
                        len(self.buf), len(data))
+        self.update_time_last_msg_received()
         self.act_on_messages(messages)
         self.update_buffer(buf_remainder)
     
@@ -143,7 +136,6 @@ class Peer:
             (message_action, message_params) = message_actions[msg.msg_id]
             message_args = [getattr(msg, param) for param in message_params]
             message_action(*message_args)
-            self.update_time_last_msg_received()
 
     def update_buffer(self, buf):
         self.buf = buf

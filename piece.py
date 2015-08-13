@@ -7,7 +7,7 @@ import message
 import math
 
 BLOCK_LENGTH = 2 ** 14
-MAX_REQUEUSTS = 10
+MAX_REQUESTS = 10
 
 class Piece(object):
     #Piece length is uniform across torrent (except last piece)
@@ -27,7 +27,6 @@ class Piece(object):
         self.dload_dir = dload_dir
         self.start_index = index * length
         self.write_file_path = os.path.join(dload_dir, 'torrtemp')
-#        self.create_write_file()
 
     def __cmp__(self, other):
         '''For purpose of sorting in order of increasing rarity'''
@@ -35,11 +34,6 @@ class Piece(object):
 
     def __repr__(self):
         return str(self.index)
-
-    def create_write_file(self):
-        file_path = os.path.join(self.dload_dir, str(self.index))
-        open(file_path, 'wa').close() # Create file if it does not exist
-        self.write_file = open(file_path, 'r+b')
 
     def add_peer_to_peer_list(self, peer):
         self.frequency += 1
@@ -83,7 +77,7 @@ class Piece(object):
 
     def get_available_peer(self):
         peer = self.peers[0]
-        if len(peer.request_q) < MAX_REQUEUSTS:
+        if len(peer.request_q) < MAX_REQUESTS:
             return peer
         else:
             # Am not calling this recursively to get default return none behavior
@@ -125,7 +119,7 @@ class Piece(object):
     # CALLS CLIENT
     def save_or_delete(self):
         if self.check_info_hash():
-            logging.debug('Awesome, info hash is correct')
+            logging.debug('Awesome, info hash for piece %s is correct', self.index)
             self.client.add_piece_to_bitfield(self.index)
         else:
             logging.warning('Incorrect info hash for piece %s', self.index)
@@ -134,7 +128,7 @@ class Piece(object):
     def reset(self):
         self.blocks_received = 0
         self.blocks_requested = 0
-        self.create_write_file()
+#        self.create_write_file()
 
     # EXPOSED METHOD
     def add_block(self, begin, block):

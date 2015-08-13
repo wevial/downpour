@@ -1,4 +1,5 @@
 import struct
+import logging
 
 BLOCK_LENGTH = 2 ** 14
 
@@ -23,6 +24,7 @@ class Msg(object):
             # Handshake is handled separately
             if len(buf) < 4:
                 break
+            logging.debug('Length of buffer in msg.get_messages_from_buffer: %s', len(buf))
             msg_len = struct.unpack('!I', buf[:4])[0]
             if msg_len == 0:
                 # Keep alive message => prevent peer from timing out

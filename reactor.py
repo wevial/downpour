@@ -42,7 +42,11 @@ class Reactor:
 
     def get_data(self):
         #logging.debug('What is reactors self.sockets? %s', self.sockets)
+        last_time = time.time()
         while self.sockets:
+            if time.time() - last_time > 20:
+                logging.debug('Loops in reactor!')
+                last_time = time.time()
             self.read_write_live_sockets()
 
     def read_write_live_sockets(self):
@@ -55,8 +59,10 @@ class Reactor:
             if data:
                 self.readers[sock](data)
             else:
+                if sock in self.readers:
+                    del self.readers[sock]
                 # Check if peer has timedout
-                self.check_for_peer_time_out(sock) # Kills peer
+#                self.check_for_peer_time_out(sock) # Kills peer
         for sock in wlist:
             try:
                 message = self.message_queues[sock]()
@@ -84,11 +90,13 @@ class Reactor:
     @staticmethod
     def read_all(socket):
         data = ''
+        last_time = time.time()
         try:
             new_data = socket.recv(MSG_LENGTH)
             if not new_data:
-                logging.debug('Theres no new data')
-                pass
+                if time.time() - last_time > 30:
+                    last_time = time.time()
+                    logging.debug('Theres no new data')
             else:
                 data += new_data
                 # logging.debug('Received data in the reactor. Data len: %s', len(new_data))

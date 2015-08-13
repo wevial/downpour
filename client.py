@@ -107,12 +107,17 @@ class Client(object):
                 if peer.verify_handshake(peer_handshake, self.info_hash):
                     logging.debug('Handshake verified. Adding peer to peer list')
                     self.add_peer(i, peer)
-                    if not self.reactor_activated:
-                        self.activate_reactor()
-                        self.reactor_activated = True
+                    print 'Connected to peer', peer
+                else:
+                    logging.info('Corruption handshake from %s. Moving on.', peer)
             except socket.error:
 #            except IOError as e:
-                logging.warning('Error in construct_peers! Socket related')
+                logging.warning('Error in connect_to_peers! Socket related')
+        logging.info('Finished connecting to peers.')
+        logging.info('Connected to %s / %s peers', len(self.peers), len(peers))
+        if not self.reactor_activated:
+             self.activate_reactor()
+             self.reactor_activated = True
         self.manage_requests(5)
 
     def get_self_ip(self):
@@ -182,7 +187,10 @@ class Client(object):
 
     def add_piece_to_bitfield(self, index):
         if not self.bitfield[index]:
+            logging.info('Completed downloading piece %s.', index)
             self.bitfield.invert(index)
+            num_completed = len([b for b in self.bitfield if b])
+            logging.info('%s of %s pieces downloaded', num_completed, len(self.bitfield))
             self.manage_requests()
         else:
             logging.warning('Should never get save same piece more than once!')
