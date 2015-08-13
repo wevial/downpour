@@ -49,7 +49,8 @@ class Stitcher:
         logging.info('Is multi file: %s', self.is_multi_file)
         logging.debug('Main_dload_dir %s', self.main_dload_dir)
         logging.debug('dload_dir %s', self.dload_dir)
-        self.stitch_tmp_files()
+        #self.stitch_tmp_files()
+        self.write_file = open(self.tmp_file_path, 'rb')
         if self.is_multi_file:
             logging.debug('It is multi file stitching')
             self.stitch_multi_files()

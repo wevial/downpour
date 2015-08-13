@@ -8,7 +8,8 @@ logging.basicConfig(filename='example.log', filemode='w', level=logging.DEBUG)
 
 import socket
 import message
-import os, sys
+import os
+import sys
 from bitstring import BitArray
 from tracker import Tracker
 from piece import Piece
@@ -42,8 +43,7 @@ class Client(object):
         metainfo = B.bdecode(f.read())
         data = metainfo['info']  # Un-bencoded dictionary
         self.info_hash = H.sha1(B.bencode(data)).digest()
-        self.announce_url = self.find_http_announce_url(metainfo)
-        #self.announce_url = 'http://tracker.ccc.de:6969/announce'
+        self.get_announce_urls(metainfo)
         self.file_name = data['name'] # Dir name if multi, otherwise file name
         self.piece_length = data['piece length']
         if 'files' in data: # Multifile torrent
@@ -54,22 +54,11 @@ class Client(object):
         self.check_if_dload_file_exists()
         self.setup_pieces(self.piece_length, data['pieces'])
 
-    def find_http_announce_url(self, metainfo):
-        print metainfo.keys()
-#        print metainfo['announce-list']
-
-        if self.is_http_url(metainfo['announce']):
-            return metainfo['announce']
-        elif 'announce-list' in metainfo.keys():
-            for url in metainfo['announce-list']:
-                url = url[0]
-                if self.is_http_url(url):
-                    print url
-                    return url
-        raise SystemExit('UDP announce urls are not supported. Currently only HTTP is supported.')
-
-    def is_http_url(self, url):
-        return 'http://' in url
+    def get_announce_urls(self, metainfo):
+        self.announce_urls = [metainfo['announce']]
+        if 'announce-list' in metainfo:
+            additional_urls = [url for ls in metainfo['announce-list'] for url in ls]
+            self.announce_urls.extend(additional_urls)
 
     def setup_multi_file_info(self, metainfo):
         self.is_multi_file = True
@@ -96,15 +85,17 @@ class Client(object):
         return handshake
 
     def setup_tracker(self):
-        self.tracker = Tracker(self, self.announce_url)
+        self.tracker = Tracker(self, self.announce_urls)
 
     def setup_peers(self):
-        peer_ips = self.tracker.send_request_and_parse_response()
+        peer_ips = self.tracker.peers
+        print peer_ips
         self.connect_to_peers(peer_ips)
 
     def connect_to_peers(self, peer_tuples):
         peers = [Peer(ip, port, self) for ip, port in peer_tuples]
-        logging.debug('Attempting to connect to peers %s', peer_tuples)
+        logging.debug('Attempting to connect to peers')
+        #logging.debug('Attempting to connect to peers %s', peer_tuples)
         for i, peer in enumerate(peers):
             try:
                 if peer.ip == self.get_self_ip():
@@ -112,15 +103,16 @@ class Client(object):
                     continue
                 peer.connect()
                 peer_handshake = peer.send_and_receive_handshake(self.handshake)
-                logging.debug('Handshake returned.')
+                logging.info('Handshake returned.')
                 if peer.verify_handshake(peer_handshake, self.info_hash):
                     logging.debug('Handshake verified. Adding peer to peer list')
                     self.add_peer(i, peer)
                     if not self.reactor_activated:
                         self.activate_reactor()
                         self.reactor_activated = True
-            except IOError as e:
-                logging.warning('Error in construct_peers! %s', e)
+            except socket.error:
+#            except IOError as e:
+                logging.warning('Error in construct_peers! Socket related')
         self.manage_requests(5)
 
     def get_self_ip(self):

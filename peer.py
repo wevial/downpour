@@ -41,15 +41,16 @@ class Peer:
     def close(self):
         self.socket.close()
 
-    def connect(self):
-        logging.debug('Attempting to connect to peer %s', self)
-        try:
-            self.socket.connect((self.ip, self.port))
-        except Exception as e:
-            logging.info('Failed to connect to peer %s', self)
-            raise e
-        else:
-            logging.debug('You have connected to peer %s', self)
+#    def connect(self):
+#        logging.debug('Attempting to connect to peer %s', self)
+#        try:
+#            self.socket.connect((self.ip, self.port))
+#        except Exception as e:
+#            logging.info('Failed to connect to peer %s', self)
+#            logging.debug('What e is: %s', e)
+#            raise e
+#        else:
+#            logging.debug('You have connected to peer %s', self)
 
     def sendall(self, msg_bytes):
         self.socket.sendall(msg_bytes)
@@ -58,15 +59,19 @@ class Peer:
         logging.debug('Waiting for handshake')
         amount_received = 0
         data = ''
+        timeout = time.time()
         while amount_received < amount_expected:
             try:
                 new_data = self.socket.recv(block_size)
-                logging.info('Received %s bytes from peer', len(new_data))
+                if len(new_data) > 0:
+                    logging.info('Received %s bytes from peer', len(new_data))
                 amount_received += len(new_data)
                 data += new_data
+                if time.time() - timeout > 10:
+                    logging.debug('Receiving data from peer timed out')
+                    break
             except Exception as e:
                 logging.debug('Problem with handshake socket')
-                pass
         return data
 
     def send_message(self, message):
@@ -75,31 +80,35 @@ class Peer:
 
     def connect(self):
         logging.debug('Attempting to connect to peer %s', self)
+        self.socket.settimeout(5)
         try:
-            self.socket.settimeout(5.0)
             self.socket.connect((self.ip, self.port))
-        except Exception as e:
-            logging.info('Failed to connect to peer %s', self)
-            raise e
-        else:
             logging.debug('You have connected to peer %s', self)
+        except Exception as e:
+            logging.debug('WTF @ peer.connect() %s', e)
+        #try:
+        #    self.socket.settimeout(5)
+        #    self.socket.connect((self.ip, self.port))
+        #    logging.debug('You have connected to peer %s', self)
+        #except socket.error:
+        #    logging.info('Failed to connect to peer %s', self)
 
     def send_and_receive_handshake(self, handshake):
         try:
             logging.info('Sending handshake')
-#            logging.info('handshake: %s', handshake)
             self.sendall(handshake)
             logging.info('Handshake sent, receiving data')
             peer_handshake = self.receive_data(68, 68)
             logging.info('Peer handshake received.')
         except Exception as e:
             raise e
-        else:
-            logging.debug('Returning peer handshake')
-            return peer_handshake
+        logging.debug('Returning peer handshake')
+        return peer_handshake
 
     def verify_handshake(self, handshake, info_hash):
         # lenpstr - pstr - reserved - info hash - peer id
+        if len(handshake) < 68:
+            return False
         (pstrlen, pstr, peer_hash, peer_id) = struct.unpack('B19s8x20s20s', handshake)
         self.peer_id = peer_id
         return peer_hash == info_hash
@@ -151,10 +160,11 @@ class Peer:
             getting timedout. If its been over 60 seconds, send a keep alive
             message to peer. """
         current_time = time.time()
-        return (current_time - self.time_last_msg_sent) > 60.0
+        return current_time - self.time_last_msg_sent > 60.0
 
     def send_keep_alive(self):
         logging.info('Sending keep alive message to %s', self)
+        self.time_last_msg_sent = time.time()
         return KeepAliveMsg().get_buffer_from_message()
 
     # Upon message id -1

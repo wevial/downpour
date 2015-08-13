@@ -25,7 +25,9 @@ class Piece(object):
         self.blocks_requested = 0
         self.blocks_received = 0
         self.dload_dir = dload_dir
-        self.create_write_file()
+        self.start_index = index * length
+        self.write_file_path = os.path.join(dload_dir, 'torrtemp')
+#        self.create_write_file()
 
     def __cmp__(self, other):
         '''For purpose of sorting in order of increasing rarity'''
@@ -85,7 +87,7 @@ class Piece(object):
             return peer
         else:
             # Am not calling this recursively to get default return none behavior
-            peers.sort()
+            self.peers.sort()
             peer = self.peers[0]
             if len(peer.request_q) < MAX_REQUESTS:
                 return peer
@@ -105,13 +107,16 @@ class Piece(object):
         return block_info
 
     def write_block_to_file(self, begin, block):
-        print 'Writing to piece', self.index, 'at position', begin
-        self.write_file.seek(begin)
-        self.write_file.write(block)
+        print 'Writing to piece', self.index, 'at position', begin + self.start_index
+        begin = self.start_index + begin
+        with open(self.write_file_path, 'r+b') as write_file:
+            write_file.seek(begin)
+            write_file.write(block)
 
     def check_info_hash(self):
-        self.write_file.seek(0)
-        file_bytes = self.write_file.read()
+        with open(self.write_file_path, 'r') as write_file:
+            write_file.seek(self.start_index)
+            file_bytes = write_file.read(self.length)
         computed_hash = H.sha1(file_bytes).digest()
         logging.debug('Checking piece hash for piece %s', self.index)
         logging.debug('Real - %s, computed - %s', self.piece_hash, computed_hash)
