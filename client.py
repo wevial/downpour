@@ -19,7 +19,6 @@ from reactor import Reactor
 from peer import Peer
 from piece_queue import PieceQueue
 
-TEST_TORRENT = 'flagfromserverorig.torrent'
 BLOCK_LENGTH = 2 ** 14
 PIECE_THRESHOLD = 5
 
@@ -42,6 +41,8 @@ class Client(object):
         f = open(self.torrent, 'r')
         metainfo = B.bdecode(f.read())
         data = metainfo['info']  # Un-bencoded dictionary
+#        print data
+#        print B.bencode(data)
         self.info_hash = H.sha1(B.bencode(data)).digest()
         self.get_announce_urls(metainfo)
         self.file_name = data['name'] # Dir name if multi, otherwise file name
@@ -111,7 +112,6 @@ class Client(object):
                 else:
                     logging.info('Corruption handshake from %s. Moving on.', peer)
             except socket.error:
-#            except IOError as e:
                 logging.warning('Error in connect_to_peers! Socket related')
         logging.info('Finished connecting to peers.')
         logging.info('Connected to %s / %s peers', len(self.peers), len(peers))
@@ -196,7 +196,6 @@ class Client(object):
             logging.warning('Should never get save same piece more than once!')
 
     def add_peer_to_piece_peer_list(self, piece_index, peer):
-        # print 'Adding piece', piece_index, 'to peer', peer
         self.pieces[piece_index].add_peer_to_peer_list(peer)
 
     def manage_requests(self, num_pieces=1):
@@ -209,6 +208,7 @@ class Client(object):
             logging.info('Cleaning up piece queue')
         else:
             self.torrent_state = 'endgame'
+            logging.info('ENTERING ENDGAME!!')
             
     def manage_piece_queue_state(self):
         # This should probably only get called occasionally

@@ -42,7 +42,10 @@ class Peer:
         self.socket.close()
 
     def sendall(self, msg_bytes):
-        self.socket.sendall(msg_bytes)
+        try:
+            self.socket.sendall(msg_bytes)
+        except socket.error:
+            logging.debug(socket.error)
 
     def receive_data(self, amount_expected, block_size):
         logging.debug('Waiting for handshake')
@@ -112,7 +115,9 @@ class Peer:
         logging.debug('Converting %s bytes from buffer and %s bytes from reactor',
                        len(self.buf), len(data))
         self.update_time_last_msg_received()
+        logging.debug('Acting on messages...')
         self.act_on_messages(messages)
+        logging.debug('Acted on those messages')
         self.update_buffer(buf_remainder)
     
     # TODO: Set up message queue to maximize bytes per trip over the servers.
@@ -133,6 +138,7 @@ class Peer:
             }
 
         for msg in messages:
+            logging.debug('Msg id = %s', msg.msg_id)
             (message_action, message_params) = message_actions[msg.msg_id]
             message_args = [getattr(msg, param) for param in message_params]
             message_action(*message_args)

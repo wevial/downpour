@@ -51,6 +51,7 @@ class Tracker:
             else:
                 self.is_udp = False
                 self.tracker_url = self.construct_tracker_url(announce_url)
+                print self.tracker_url
                 self.send_request_and_parse_response()
                 return self.peers
         raise SystemExit('Failed to connect to any tracker server.')

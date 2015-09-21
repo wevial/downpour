@@ -55,9 +55,9 @@ class Reactor:
         rlist, wlist, _ = select.select(socks, socks, socks)
         for sock in rlist:
             data = self.read_all(sock)
-            self.check_for_client_time_out(sock)
             if data:
                 self.readers[sock](data)
+                self.check_for_client_time_out(sock)
             else:
                 if sock in self.readers:
                     del self.readers[sock]
